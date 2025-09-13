@@ -48,6 +48,8 @@ cd JournAI
 # Install backend dependencies
 cd backend
 npm install
+# Create necessary directories
+mkdir -p data uploads
 
 # Install frontend dependencies
 cd ../frontend
