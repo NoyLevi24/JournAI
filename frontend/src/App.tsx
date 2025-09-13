@@ -70,15 +70,205 @@ const primaryBtnStyle: React.CSSProperties = { padding:'12px 18px',borderRadius:
 function Home({ onStart, onOpenAuth, onTrips }: { onStart: () => void, onOpenAuth: () => void, onTrips: () => void }) {
   return (
     <>
+      {/* Hero Section */}
       <section className="section" style={{position:'relative'}}>
         <div className="container" style={{textAlign:'center'}}>
-          <div style={{marginTop:60,display:'grid',gap:14,placeItems:'center'}}>
+          <div style={{marginTop:60,display:'grid',gap:20,placeItems:'center'}}>
             <img src="/logo.png" alt="JournAI" style={{height:160,filter:'drop-shadow(0 10px 20px rgba(0,0,0,0.5))'}}/>
-            <div style={{display:'flex',gap:10}}>
-              <button onClick={onOpenAuth} className="btn">Sign in</button>
-              <button onClick={onStart} className="btn primary" style={{fontSize:18}}>Get Started</button>
-              <button onClick={onTrips} className="btn">My Trips</button>
+            <div style={{maxWidth:800}}>
+              <h1 style={{fontSize:64,fontWeight:900,marginBottom:20,background:'linear-gradient(135deg, #7bdcff, #0ea5e9)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                Plan Your Perfect Trip
+              </h1>
+              <p style={{fontSize:20,opacity:0.9,marginBottom:30,lineHeight:1.6}}>
+                Let AI create personalized travel itineraries tailored to your interests, budget, and style. 
+                From hidden gems to must-see attractions, JournAI crafts unforgettable experiences.
+              </p>
             </div>
+            <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center'}}>
+              <button onClick={onOpenAuth} className="btn" style={{fontSize:16,padding:'14px 28px'}}>Sign in</button>
+              <button onClick={onStart} className="btn primary" style={{fontSize:18,padding:'14px 32px'}}>Get Started</button>
+              <button onClick={onTrips} className="btn" style={{fontSize:16,padding:'14px 28px'}}>My Trips</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section style={{padding:'80px 20px',background:'rgba(0,0,0,0.3)'}}>
+        <div className="container">
+          <h2 style={{textAlign:'center',fontSize:48,fontWeight:800,marginBottom:60,color:'#fff'}}>How It Works</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))',gap:40}}>
+            <div className="glass" style={{padding:32,textAlign:'center',borderRadius:16}}>
+              <div style={{width:80,height:80,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',margin:'0 auto 20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,fontWeight:800,color:'#001018'}}>1</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Tell Us Your Preferences</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Share your destination, budget, travel dates, and interests. Our AI learns your style to create the perfect itinerary.</p>
+            </div>
+            <div className="glass" style={{padding:32,textAlign:'center',borderRadius:16}}>
+              <div style={{width:80,height:80,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',margin:'0 auto 20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,fontWeight:800,color:'#001018'}}>2</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>AI Creates Your Plan</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Our advanced AI analyzes millions of travel data points to craft a detailed, day-by-day itinerary with attractions, restaurants, and activities.</p>
+            </div>
+            <div className="glass" style={{padding:32,textAlign:'center',borderRadius:16}}>
+              <div style={{width:80,height:80,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',margin:'0 auto 20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,fontWeight:800,color:'#001018'}}>3</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Explore & Document</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Follow your personalized plan, upload photos, and create lasting memories. Your journey becomes a beautiful digital album.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose JournAI Section */}
+      <section style={{padding:'80px 20px'}}>
+        <div className="container">
+          <h2 style={{textAlign:'center',fontSize:48,fontWeight:800,marginBottom:60,color:'#fff'}}>Why Choose JournAI?</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(350px, 1fr))',gap:32}}>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>🤖</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>AI-Powered Planning</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Leverage cutting-edge artificial intelligence to discover hidden gems and create personalized experiences that match your unique travel style.</p>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>⚡</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Instant Results</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Get comprehensive travel plans in seconds, not hours. No more endless research - just tell us what you want and we'll handle the rest.</p>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>💰</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Budget-Conscious</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>From shoestring adventures to luxury getaways, our AI adapts to your budget and finds the best value for your money.</p>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>📱</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Digital Memory Book</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Capture and organize your travel memories with our built-in photo album feature. Every trip becomes a beautiful digital story.</p>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>🌍</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Global Coverage</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>From bustling cities to remote destinations, our AI has knowledge of places worldwide to create amazing itineraries anywhere.</p>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:48,marginBottom:16}}>🎯</div>
+              <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Personalized Experience</h3>
+              <p style={{opacity:0.9,lineHeight:1.6}}>Every itinerary is uniquely tailored to your interests, whether you love art, nature, food, adventure, or cultural experiences.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Success Stories Section */}
+      <section style={{padding:'80px 20px',background:'rgba(0,0,0,0.3)'}}>
+        <div className="container">
+          <h2 style={{textAlign:'center',fontSize:48,fontWeight:800,marginBottom:60,color:'#fff'}}>What Our Travelers Say</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(350px, 1fr))',gap:32}}>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:24,marginBottom:16,color:'#7bdcff'}}>"</div>
+              <p style={{fontSize:18,lineHeight:1.6,marginBottom:20,fontStyle:'italic'}}>
+                "JournAI planned my 2-week Japan trip perfectly! It found amazing hidden restaurants and temples I never would have discovered on my own. The daily schedule was spot-on."
+              </p>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:48,height:48,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#001018'}}>S</div>
+                <div>
+                  <div style={{fontWeight:700,color:'#fff'}}>Sarah M.</div>
+                  <div style={{opacity:0.7,fontSize:14}}>Tokyo, Japan</div>
+                </div>
+              </div>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:24,marginBottom:16,color:'#7bdcff'}}>"</div>
+              <p style={{fontSize:18,lineHeight:1.6,marginBottom:20,fontStyle:'italic'}}>
+                "As a solo female traveler, I was nervous about planning my Europe trip. JournAI created a safe, budget-friendly itinerary that was perfect for me. I felt confident every step of the way."
+              </p>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:48,height:48,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#001018'}}>M</div>
+                <div>
+                  <div style={{fontWeight:700,color:'#fff'}}>Maria L.</div>
+                  <div style={{opacity:0.7,fontSize:14}}>Europe Backpacking</div>
+                </div>
+              </div>
+            </div>
+            <div className="glass" style={{padding:28,borderRadius:16}}>
+              <div style={{fontSize:24,marginBottom:16,color:'#7bdcff'}}>"</div>
+              <p style={{fontSize:18,lineHeight:1.6,marginBottom:20,fontStyle:'italic'}}>
+                "We used JournAI for our family vacation to Italy. It perfectly balanced activities for our kids and adults, finding kid-friendly restaurants and attractions. Best family trip ever!"
+              </p>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:48,height:48,background:'linear-gradient(135deg, #0ea5e9, #7bdcff)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#001018'}}>J</div>
+                <div>
+                  <div style={{fontWeight:700,color:'#fff'}}>John & Family</div>
+                  <div style={{opacity:0.7,fontSize:14}}>Rome & Florence</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trip Examples Section */}
+      <section style={{padding:'80px 20px'}}>
+        <div className="container">
+          <h2 style={{textAlign:'center',fontSize:48,fontWeight:800,marginBottom:60,color:'#fff'}}>Inspiration for Your Next Adventure</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))',gap:32}}>
+            <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
+              <div style={{height:200,backgroundImage:'url(/rome.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
+                <div style={{fontSize:48,zIndex:1}}>🏛️</div>
+              </div>
+              <div style={{padding:24}}>
+                <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Cultural Heritage Tour</h3>
+                <p style={{opacity:0.9,marginBottom:16,lineHeight:1.6}}>7 days in Rome exploring ancient history, art museums, and authentic Italian cuisine. Perfect for history buffs and culture enthusiasts.</p>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>History</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Art</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Food</span>
+                </div>
+              </div>
+            </div>
+            <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
+              <div style={{height:200,backgroundImage:'url(/Swiss-Alps.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
+                <div style={{fontSize:48,zIndex:1}}>🏔️</div>
+              </div>
+              <div style={{padding:24}}>
+                <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Nature Adventure</h3>
+                <p style={{opacity:0.9,marginBottom:16,lineHeight:1.6}}>5 days in the Swiss Alps with hiking, mountain views, and cozy alpine villages. Ideal for outdoor enthusiasts and nature lovers.</p>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Nature</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Adventure</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Hiking</span>
+                </div>
+              </div>
+            </div>
+            <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
+              <div style={{height:200,backgroundImage:'url(/Bali.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
+                <div style={{fontSize:48,zIndex:1}}>🏖️</div>
+              </div>
+              <div style={{padding:24}}>
+                <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Tropical Paradise</h3>
+                <p style={{opacity:0.9,marginBottom:16,lineHeight:1.6}}>10 days in Bali with beach relaxation, water activities, and spiritual experiences. Perfect for those seeking peace and rejuvenation.</p>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Beach</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Relaxation</span>
+                  <span style={{padding:'4px 12px',background:'rgba(14,165,233,0.2)',borderRadius:20,fontSize:12,color:'#7bdcff'}}>Wellness</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section style={{padding:'80px 20px',background:'rgba(0,0,0,0.4)'}}>
+        <div className="container" style={{textAlign:'center'}}>
+          <h2 style={{fontSize:48,fontWeight:800,marginBottom:20,color:'#fff'}}>Ready to Start Your Journey?</h2>
+          <p style={{fontSize:20,opacity:0.9,marginBottom:40,maxWidth:600,margin:'0 auto 40px',lineHeight:1.6}}>
+            Join thousands of travelers who trust JournAI to create their perfect trips. 
+            Your next adventure is just a click away.
+          </p>
+          <div style={{display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+            <button onClick={onStart} className="btn primary" style={{fontSize:18,padding:'16px 36px'}}>Plan My Trip</button>
+            <button onClick={onOpenAuth} className="btn" style={{fontSize:16,padding:'16px 32px'}}>Sign Up Free</button>
           </div>
         </div>
       </section>
