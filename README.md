@@ -113,6 +113,8 @@ Ensure these files are in `frontend/public/`:
 
 ### Production Deployment
 
+#### Option 1: Simple Production (npm)
+
 ```bash
 # Build frontend
 cd frontend
@@ -122,6 +124,26 @@ npm run build
 cd ../backend
 npm start
 ```
+
+#### Option 2: Docker Compose (Recommended for Production)
+
+```bash
+# Run with Docker Compose (builds images if needed)
+docker-compose up --build
+
+# Or run in background
+docker-compose up -d --build
+```
+
+**Docker Compose Benefits:**
+- **Nginx** serves static files (faster)
+- **Isolated containers** for better security
+- **Easy scaling** and deployment
+- **Production-ready** configuration
+
+**Access:**
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3000/api
 
 ## 🛠️ Technical Details
 
