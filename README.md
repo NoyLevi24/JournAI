@@ -58,7 +58,7 @@ npm install
 
 ```bash
 # Backend environment setup
-cd ../backend
+cd backend
 cp env.example .env
 ```
 
