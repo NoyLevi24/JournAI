@@ -42,7 +42,7 @@ JournAI/
 
 ```bash
 # Clone the repository
-git clone https://github.com/NoyLevi24/JournAI.git
+git clone <repository-url>
 cd JournAI
 
 # Install backend dependencies
