@@ -28,4 +28,3 @@ cd ../backend && npm start
 
 API base: `/api`
 # JournAI
-# JournAI
