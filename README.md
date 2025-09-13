@@ -58,11 +58,25 @@ npm install
 
 ```bash
 # Backend environment setup
-cd backend
+cd ../backend
 cp env.example .env
-# Edit .env file with your configuration:
-# JWT_SECRET=your-secret-key
-# OPENAI_API_KEY=your-openai-key (optional)
+```
+
+**⚠️ IMPORTANT:** Edit the `.env` file with your configuration:
+```bash
+# Open .env file and set:
+JWT_SECRET=your_super_secret_jwt_key_here_change_this
+OPENAI_API_KEY=sk-your-openai-api-key-here  # Optional - leave empty if not using OpenAI
+PORT=3000  # Optional - defaults to 3000
+```
+
+**🔑 JWT_SECRET:** Generate a strong secret key (at least 32 characters):
+```bash
+# Option 1: Use Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Option 2: Use online generator or create your own
+# Example: my_super_secret_jwt_key_2024_journai_secure_12345
 ```
 
 ### Step 3: Run Development Servers
