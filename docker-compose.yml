@@ -16,6 +16,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
     ports:
       - "3000:3000"
     depends_on:
