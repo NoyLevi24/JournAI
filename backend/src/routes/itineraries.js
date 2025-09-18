@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { all, get, run } from '../storage/db.js'
 import { requireAuth } from '../middleware/auth.js'
 import { generateItinerary } from '../services/ai.js'
+import OpenAI from 'openai'
 
 const router = Router()
 
@@ -93,3 +94,34 @@ function formatRow(row) {
 }
 
 export default router
+
+// AI edit endpoint: accepts { message, plan } and returns updated plan
+router.post('/:id/edit', requireAuth, async (req, res) => {
+  const { message, plan } = req.body || {}
+  if (!message || !plan) return res.status(400).json({ error: 'Missing message or plan' })
+  let updated = plan
+  const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
+  if (!client) {
+    // Simple rule-based tweak if no OpenAI
+    updated = { ...plan, days: (plan.days||[]).map((d)=> ({ ...d, summary: (d.summary||'') + ' (edited)' })) }
+    await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
+    return res.json({ plan: updated })
+  }
+  try {
+    const sys = 'You edit a travel itinerary JSON when given user change requests. Return JSON only.'
+    const user = [
+      'Given this current plan JSON:',
+      JSON.stringify(plan),
+      'Apply this user request and return the full updated plan JSON only:',
+      message
+    ].join('\n')
+    const out = await client.chat.completions.create({ model:'gpt-4o-mini', messages:[{role:'system', content:sys},{role:'user',content:user}] })
+    const text = out.choices?.[0]?.message?.content || ''
+    const parsed = JSON.parse(text)
+    updated = parsed
+  } catch (e) {
+    updated = { ...plan, days: (plan.days||[]).map((d)=> ({ ...d, summary: (d.summary||'') + ' (edited)' })) }
+  }
+  await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
+  res.json({ plan: updated })
+})

@@ -2,7 +2,8 @@ import { Router } from 'express'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
-import { get, run } from '../storage/db.js'
+import { get, run, all } from '../storage/db.js'
+import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -47,3 +48,47 @@ router.post('/login', async (req, res) => {
 })
 
 export default router
+
+// Profile endpoints
+router.get('/me', requireAuth, async (req, res) => {
+  const user = await get('SELECT id, username, email, avatar, created_at FROM users WHERE id = ?', [req.userId])
+  if (!user) return res.status(404).json({ error: 'Not found' })
+  res.json(user)
+})
+
+router.put('/me', requireAuth, async (req, res) => {
+  const { username, email } = req.body || {}
+  if (!username && !email) return res.status(400).json({ error: 'No fields' })
+  if (email) {
+    const exists = await get('SELECT id FROM users WHERE email = ? AND id <> ?', [email, req.userId])
+    if (exists) return res.status(400).json({ error: 'Email already in use' })
+  }
+  if (username) {
+    const exists = await get('SELECT id FROM users WHERE username = ? AND id <> ?', [username, req.userId])
+    if (exists) return res.status(400).json({ error: 'Username already in use' })
+  }
+  await run('UPDATE users SET username = COALESCE(?, username), email = COALESCE(?, email) WHERE id = ?', [username || null, email || null, req.userId])
+  const user = await get('SELECT id, username, email, avatar, created_at FROM users WHERE id = ?', [req.userId])
+  res.json(user)
+})
+
+router.put('/me/password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {}
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Missing fields' })
+  const user = await get('SELECT * FROM users WHERE id = ?', [req.userId])
+  if (!user) return res.status(404).json({ error: 'Not found' })
+  const ok = await bcrypt.compare(currentPassword, user.password_hash)
+  if (!ok) return res.status(400).json({ error: 'Current password incorrect' })
+  const passwordHash = await bcrypt.hash(newPassword, 10)
+  await run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.userId])
+  res.json({ ok: true })
+})
+
+// Simple avatar upload via base64 data URL (keep simple for now)
+router.put('/me/avatar', requireAuth, async (req, res) => {
+  const { avatar } = req.body || {}
+  if (typeof avatar !== 'string' || avatar.length < 10) return res.status(400).json({ error: 'Invalid avatar' })
+  await run('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.userId])
+  const user = await get('SELECT id, username, email, avatar, created_at FROM users WHERE id = ?', [req.userId])
+  res.json(user)
+})

@@ -7,11 +7,20 @@ services:
       - backend/.env
     environment:
       - PORT=3000
+      - DB_CLIENT=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=journai
+      - DB_USER=journai
+      - DB_PASSWORD=journai
     volumes:
       - ./backend/src:/app/src
       - ./backend/data:/app/data
     ports:
       - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -23,3 +32,23 @@ services:
     ports:
       - "5173:80"
     restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: journai
+      POSTGRES_USER: journai
+      POSTGRES_PASSWORD: journai
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db-data:

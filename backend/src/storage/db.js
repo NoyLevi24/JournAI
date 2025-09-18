@@ -31,6 +31,23 @@ export async function initDatabase() {
 		)
 	`)
 
+	// Add optional columns if missing
+	await ensureUserOptionalColumns()
+	await ensurePhotoOptionalColumns()
+
+	// Albums table
+	await run(`
+		CREATE TABLE IF NOT EXISTS albums (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			itinerary_id INTEGER NOT NULL,
+			name TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY(itinerary_id) REFERENCES itineraries(id) ON DELETE CASCADE
+		)
+	`)
+
 	await run(`
 		CREATE TABLE IF NOT EXISTS itineraries (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,4 +104,28 @@ export function all(sql, params = []) {
 			resolve(rows)
 		})
 	})
+}
+
+async function ensureUserOptionalColumns() {
+	// Ensure 'avatar' column exists
+	const cols = await all(`PRAGMA table_info(users)`)
+	const hasAvatar = cols?.some(c => c.name === 'avatar')
+	if (!hasAvatar) {
+		try { await run(`ALTER TABLE users ADD COLUMN avatar TEXT`) } catch {}
+	}
+}
+
+// Ensure photos table has album and metadata columns
+async function ensurePhotoOptionalColumns() {
+	const cols = await all(`PRAGMA table_info(photos)`)
+	const hasAlbum = cols?.some(c => c.name === 'album_id')
+	if (!hasAlbum) { try { await run(`ALTER TABLE photos ADD COLUMN album_id INTEGER`) } catch {} }
+	const hasTitle = cols?.some(c => c.name === 'title')
+	if (!hasTitle) { try { await run(`ALTER TABLE photos ADD COLUMN title TEXT`) } catch {} }
+	const hasTakenAt = cols?.some(c => c.name === 'taken_at')
+	if (!hasTakenAt) { try { await run(`ALTER TABLE photos ADD COLUMN taken_at TEXT`) } catch {} }
+	const hasLocation = cols?.some(c => c.name === 'location')
+	if (!hasLocation) { try { await run(`ALTER TABLE photos ADD COLUMN location TEXT`) } catch {} }
+	const hasTags = cols?.some(c => c.name === 'tags')
+	if (!hasTags) { try { await run(`ALTER TABLE photos ADD COLUMN tags TEXT`) } catch {} }
 }

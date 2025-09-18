@@ -9,6 +9,7 @@ import authRouter from './routes/auth.js'
 import itineraryRouter from './routes/itineraries.js'
 import { usingOpenAI } from './services/ai.js'
 import photosRouter from './routes/photos.js'
+import albumsRouter from './routes/albums.js'
 
 dotenv.config()
 
@@ -28,6 +29,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/itineraries', itineraryRouter)
 app.use('/api/photos', photosRouter)
+app.use('/api/albums', albumsRouter)
 
 // serve uploaded files
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))

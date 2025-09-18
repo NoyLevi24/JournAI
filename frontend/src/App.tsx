@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 
-function NavBar({ onHome, onOpenAuth, onStart, showBrand, token, onLogout }: { onHome: () => void, onOpenAuth: () => void, onStart: () => void, showBrand: boolean, token: string | null, onLogout: ()=>void }) {
+function NavBar({ onHome, onOpenAuth, goPlan, goTrips, goAlbums, showBrand, token, onLogout, user, onOpenProfile, route }: { onHome: () => void, onOpenAuth: () => void, goPlan: () => void, goTrips: () => void, goAlbums: ()=>void, showBrand: boolean, token: string | null, onLogout: ()=>void, user: any | null, onOpenProfile: ()=>void, route: string }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const showNavLinks = !!token && route !== 'home'
   return (
     <div style={{position:'fixed',top:0,left:0,right:0,height:72,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 28px',backdropFilter:'blur(8px)',background:'rgba(0,0,0,0.35)',zIndex:10,borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
       <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={onHome}>
@@ -9,14 +11,283 @@ function NavBar({ onHome, onOpenAuth, onStart, showBrand, token, onLogout }: { o
           <span style={{color:'#fff',fontWeight:800,letterSpacing:0.6}}>JOURNAI</span>
         </>}
       </div>
-      <div style={{display:'flex',alignItems:'center',gap:24,color:'#e5e7eb'}}>
-        <a onClick={onHome} style={{cursor:'pointer'}}>Home</a>
+      <div style={{display:'flex',alignItems:'center',gap:18,color:'#e5e7eb'}}>
         {!token ? (
-          <a onClick={onOpenAuth} style={{cursor:'pointer'}}>Login/Registration</a>
+          <a onClick={onOpenAuth} style={{cursor:'pointer'}}>Sign in</a>
         ) : (
-          <a onClick={onLogout} style={{cursor:'pointer'}}>Logout</a>
+          <>
+            {showNavLinks && (
+              <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <a onClick={onHome} style={{cursor:'pointer'}}>Home</a>
+                {route !== 'planner' && <a onClick={goPlan} style={{cursor:'pointer'}}>Plan</a>}
+                {route !== 'albums' && <a onClick={goAlbums} style={{cursor:'pointer'}}>My Albums</a>}
+                {route !== 'trips' && <a onClick={goTrips} style={{cursor:'pointer'}}>My Trips</a>}
+              </div>
+            )}
+            <div style={{position:'relative'}}>
+              <div onClick={()=>setMenuOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+                <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',border:'1px solid #333',background:'#0d0d0d',display:'grid',placeItems:'center'}}>
+                  {user?.avatar ? <img src={user.avatar} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontWeight:800}}>{(user?.username||'U').charAt(0).toUpperCase()}</span>}
+                </div>
+              </div>
+              {menuOpen && (
+                <div style={{position:'absolute',right:0,top:48,minWidth:240,background:'#0b0b0b',border:'1px solid #333',borderRadius:12,boxShadow:'0 10px 30px rgba(0,0,0,0.5)',padding:10,zIndex:20}}>
+                  <div style={{display:'flex',gap:10,alignItems:'center',padding:10}}>
+                    <div style={{width:40,height:40,borderRadius:'50%',overflow:'hidden',border:'1px solid #333',background:'#0d0d0d',display:'grid',placeItems:'center'}}>
+                      {user?.avatar ? <img src={user.avatar} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontWeight:800}}>{(user?.username||'U').charAt(0).toUpperCase()}</span>}
+                    </div>
+                    <div>
+                      <div style={{fontWeight:700}}>{user?.username||'User'}</div>
+                      <div style={{opacity:0.8,fontSize:12}}>{user?.email||''}</div>
+                    </div>
+                  </div>
+                  <div style={{height:1,background:'#222',margin:'6px 0'}}/>
+                  <button onClick={()=>{ onOpenProfile(); setMenuOpen(false) }} style={{width:'100%',textAlign:'left',padding:'8px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>Edit Profile</button>
+                  <button onClick={()=>{ onLogout(); setMenuOpen(false) }} style={{width:'100%',textAlign:'left',padding:'8px 10px',borderRadius:8,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer',marginTop:6}}>Logout</button>
+                </div>
+              )}
+            </div>
+          </>
         )}
-        <button onClick={onStart} style={primaryBtnStyle}>Get Started</button>
+      </div>
+    </div>
+  )
+}
+
+function AlbumPage({ token, tripId, onBack }: { token: string, tripId: number, onBack: ()=>void }) {
+  const [trip, setTrip] = useState<any | null>(null)
+  const [photos, setPhotos] = useState<any[]>([])
+  const [albums, setAlbums] = useState<any[]>([])
+  const [activeAlbumId, setActiveAlbumId] = useState<number | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [title, setTitle] = useState('')
+  const [caption, setCaption] = useState('')
+  const [takenAt, setTakenAt] = useState('')
+  const [location, setLocation] = useState('')
+  const [tags, setTags] = useState('')
+
+  const load = async () => {
+    const t = await fetch(`/api/itineraries/${tripId}`, { headers:{ Authorization:`Bearer ${token}` } })
+    if (t.ok) setTrip(await t.json())
+    const [p, a] = await Promise.all([
+      fetch(`/api/photos/${tripId}`, { headers:{ Authorization:`Bearer ${token}` } }),
+      fetch(`/api/albums/itinerary/${tripId}`, { headers:{ Authorization:`Bearer ${token}` } })
+    ])
+    if (p.ok) {
+      const list = await p.json()
+      setPhotos(list.map((ph:any)=> ({ ...ph, tags: ph.tags ? (typeof ph.tags === 'string' ? (()=>{ try { return JSON.parse(ph.tags) } catch { return [] } })() : ph.tags) : [] })))
+    }
+    if (a.ok) setAlbums(await a.json())
+  }
+  useEffect(()=>{ load() }, [tripId])
+
+  const filtered = photos.filter(p => (activeAlbumId ? p.album_id === activeAlbumId : !p.album_id))
+
+  const upload = async () => {
+    if (!file) return
+    const fd = new FormData()
+    fd.append('photo', file)
+    if (title) fd.append('title', title)
+    if (caption) fd.append('caption', caption)
+    if (takenAt) fd.append('takenAt', takenAt)
+    if (location) fd.append('location', location)
+    if (tags) fd.append('tags', JSON.stringify(tags.split(',').map(s=>s.trim()).filter(Boolean)))
+    if (activeAlbumId) fd.append('albumId', String(activeAlbumId))
+    const res = await fetch(`/api/photos/${tripId}`, { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
+    if (res.ok) { setFile(null); setTitle(''); setCaption(''); setTakenAt(''); setLocation(''); setTags(''); const el = document.getElementById('file-input') as HTMLInputElement | null; if (el) el.value = ''; load() }
+  }
+  const remove = async (id:number) => {
+    const res = await fetch(`/api/photos/${id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } })
+    if (res.ok) setPhotos(photos.filter(p=>p.id!==id))
+  }
+  const createAlbum = async () => {
+    const name = prompt('Album name (e.g., Day 1, Old Town)')
+    if (!name) return
+    const res = await fetch(`/api/albums/itinerary/${tripId}`, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ name }) })
+    if (res.ok) { const a = await res.json(); setAlbums([a, ...albums]) }
+  }
+  const renameAlbum = async (id:number) => {
+    const name = prompt('New album name')
+    if (!name) return
+    const res = await fetch(`/api/albums/${id}`, { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ name }) })
+    if (res.ok) { const updated = await res.json(); setAlbums(albums.map(al=>al.id===id?updated:al)) }
+  }
+  const deleteAlbum = async (id:number) => {
+    if (!confirm('Delete album? Photos will remain in General.')) return
+    const res = await fetch(`/api/albums/${id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } })
+    if (res.ok) { setAlbums(albums.filter(a=>a.id!==id)); if (activeAlbumId===id) setActiveAlbumId(null) }
+  }
+
+  return (
+    <div style={{maxWidth:1100,margin:'120px auto 60px',padding:'0 20px',color:'#fff'}}>
+      <div style={{display:'flex',gap:8,marginBottom:12}}>
+        <button onClick={onBack} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>Back</button>
+      </div>
+      {trip && <h2>{trip.destination} Album</h2>}
+      <div className="glass" style={{border:'1px solid #333',borderRadius:12,padding:14,marginTop:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+            <button onClick={()=>setActiveAlbumId(null)} style={{padding:'6px 10px',borderRadius:8,border:`1px solid ${activeAlbumId===null?'#0ea5e9':'#333'}`,background:activeAlbumId===null?'#0ea5e9':'transparent',color:activeAlbumId===null?'#001018':'#e5e7eb',cursor:'pointer'}}>General</button>
+            {albums.map(a => (
+              <div key={a.id} style={{display:'flex',alignItems:'center',gap:6}}>
+                <button onClick={()=>setActiveAlbumId(a.id)} style={{padding:'6px 10px',borderRadius:8,border:`1px solid ${activeAlbumId===a.id?'#0ea5e9':'#333'}`,background:activeAlbumId===a.id?'#0ea5e9':'transparent',color:activeAlbumId===a.id?'#001018':'#e5e7eb',cursor:'pointer'}}>{a.name}</button>
+                <button onClick={()=>renameAlbum(a.id)} title="Rename" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>✎</button>
+                <button onClick={()=>deleteAlbum(a.id)} title="Delete" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer'}}>×</button>
+              </div>
+            ))}
+          </div>
+          <button onClick={createAlbum} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>+ New album</button>
+        </div>
+        <div style={{display:'grid',gap:8,marginTop:10}}>
+          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+            <input id="file-input" type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} />
+            <button onClick={upload} style={primaryBtnStyle} disabled={!file || activeAlbumId==null}>Upload</button>
+          </div>
+          {file && (
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              <input placeholder="Title (optional)" value={title} onChange={e=>setTitle(e.target.value)} style={{...inputStyle,width:180}}/>
+              <input placeholder="Caption (optional)" value={caption} onChange={e=>setCaption(e.target.value)} style={{...inputStyle,width:220}}/>
+              <input type="date" placeholder="Date" value={takenAt} onChange={e=>setTakenAt(e.target.value)} style={{...inputStyle,width:180}}/>
+              <input placeholder="Location (optional)" value={location} onChange={e=>setLocation(e.target.value)} style={{...inputStyle,width:200}}/>
+              <input placeholder="Tags (comma-separated)" value={tags} onChange={e=>setTags(e.target.value)} style={{...inputStyle,width:240}}/>
+            </div>
+          )}
+          {activeAlbumId==null && <div style={{opacity:0.8,fontSize:12}}>Tip: create/select a sub‑album to upload. General aggregates all photos.</div>}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))',gap:10,marginTop:12}}>
+          {(activeAlbumId==null ? photos : filtered).map(p => (
+            <div key={p.id} className="glass" style={{border:'1px solid #333',borderRadius:8,padding:8}}>
+              <img src={`/uploads/${p.filename}`} alt={p.caption||''} style={{width:'100%',height:160,objectFit:'cover',borderRadius:6,display:'block'}} onError={(e)=>{(e.target as HTMLImageElement).style.opacity='0.3'}}/>
+              <div style={{marginTop:6}}>
+                <div style={{fontWeight:700}}>{p.title||''}</div>
+                <div style={{opacity:0.9,fontSize:12}}>{p.caption||''}</div>
+                <div style={{opacity:0.7,fontSize:12}}>{p.taken_at||''} {p.location?`• ${p.location}`:''}</div>
+                <div style={{opacity:0.7,fontSize:12}}>{Array.isArray(p.tags)? p.tags.join(', ') : ''}</div>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+                <button onClick={()=>remove(p.id)} style={{padding:'4px 8px',borderRadius:6,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer'}}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AllAlbumsPage({ token, onOpenAlbum }: { token: string, onOpenAlbum: (tripId:number)=>void }) {
+  const [trips, setTrips] = useState<any[]>([])
+  const [latestByTrip, setLatestByTrip] = useState<Record<number,string>>({})
+  const load = async () => {
+    const res = await fetch('/api/itineraries', { headers:{ Authorization:`Bearer ${token}` } })
+    if (!res.ok) return
+    const list = await res.json()
+    setTrips(list)
+    const entries = await Promise.all(list.map(async (t:any)=>{
+      const p = await fetch(`/api/photos/${t.id}`, { headers:{ Authorization:`Bearer ${token}` } })
+      if (p.ok) {
+        const ph = await p.json()
+        const latest = ph?.[0]?.filename
+        return [t.id, latest] as [number, string|undefined]
+      }
+      return [t.id, undefined] as [number, undefined]
+    }))
+    const map: Record<number,string> = {}
+    for (const [id, fn] of entries) { if (fn) map[id]=fn }
+    setLatestByTrip(map)
+  }
+  useEffect(()=>{ load() }, [])
+  return (
+    <div style={{maxWidth:1100,margin:'120px auto 60px',padding:'0 20px',color:'#fff'}}>
+      <h2>My Albums</h2>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))',gap:16,marginTop:12}}>
+        {trips.map(t=> (
+          <button key={t.id} onClick={()=>onOpenAlbum(t.id)} className="glass" style={{border:'1px solid #333',borderRadius:12,padding:0,overflow:'hidden',textAlign:'left',cursor:'pointer',color:'#e5e7eb'}}>
+            <div style={{height:160,background:'#0d0d0d'}}>
+              {latestByTrip[t.id] ? (
+                <img src={`/uploads/${latestByTrip[t.id]}`} alt="cover" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+              ) : (
+                <div style={{height:'100%',display:'grid',placeItems:'center',opacity:0.6}}>No photos yet</div>
+              )}
+            </div>
+            <div style={{padding:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div style={{fontWeight:700}}>{t.destination}</div>
+                <div style={{opacity:0.8,fontSize:12}}>{t.destination} album</div>
+              </div>
+              <div style={{opacity:0.6}}>›</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ProfileModal({ open, onClose, token, onUpdated }: { open: boolean, onClose: ()=>void, token: string, onUpdated: (u:any)=>void }) {
+  const [user, setUser] = useState<any|null>(null)
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [avatar, setAvatar] = useState<string>('')
+  const [showChangePass, setShowChangePass] = useState(false)
+  useEffect(()=>{
+    if (!open) return
+    ;(async()=>{
+      const res = await fetch('/api/auth/me', { headers:{ Authorization:`Bearer ${token}` } })
+      if (res.ok) {
+        const u = await res.json()
+        setUser(u); setUsername(u.username||''); setEmail(u.email||''); setAvatar(u.avatar||'')
+      }
+    })()
+  }, [open, token])
+  if (!open) return null
+  const save = async () => {
+    const res = await fetch('/api/auth/me', { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ username, email }) })
+    if (res.ok) { const u = await res.json(); onUpdated(u) }
+  }
+  const changePass = async () => {
+    if (!currentPassword || !newPassword) return
+    await fetch('/api/auth/me/password', { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ currentPassword, newPassword }) })
+    setCurrentPassword(''); setNewPassword('')
+  }
+  const onPickAvatar = (f: File|null) => {
+    if (!f) return
+    const reader = new FileReader(); reader.onload = async () => {
+      const dataUrl = reader.result as string
+      const res = await fetch('/api/auth/me/avatar', { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ avatar: dataUrl }) })
+      if (res.ok) { const u = await res.json(); setAvatar(u.avatar||''); onUpdated(u) }
+    }; reader.readAsDataURL(f)
+  }
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{width:520,background:'#111',color:'#eee',border:'1px solid #333',borderRadius:12,padding:22,boxShadow:'0 10px 30px rgba(0,0,0,0.6)'}}>
+        <h2 style={{marginTop:0}}>Profile</h2>
+        <div style={{display:'grid',gridTemplateColumns:'auto 1fr',gap:16,alignItems:'center'}}>
+          <div>
+            <div style={{width:72,height:72,borderRadius:'50%',overflow:'hidden',border:'1px solid #333',background:'#0d0d0d',display:'grid',placeItems:'center'}}>
+              {avatar ? <img src={avatar} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontWeight:800,fontSize:22}}>{(username||'U').charAt(0).toUpperCase()}</span>}
+            </div>
+            <input type="file" accept="image/*" onChange={e=>onPickAvatar(e.target.files?.[0]||null)} style={{marginTop:8}}/>
+          </div>
+          <div>
+            <input placeholder='Username' value={username} onChange={e=>setUsername(e.target.value)} style={inputStyle}/>
+            <input placeholder='Email' value={email} onChange={e=>setEmail(e.target.value)} style={inputStyle}/>
+            <button onClick={save} style={primaryBtnStyle}>Save</button>
+          </div>
+        </div>
+        <div style={{height:1,background:'#222',margin:'16px 0'}}/>
+        <button onClick={()=>setShowChangePass(s=>!s)} style={{padding:'8px 12px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>
+          {showChangePass ? 'Hide change password' : 'Change password'}
+        </button>
+        {showChangePass && (
+          <div style={{marginTop:10,display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:8,alignItems:'center'}}>
+            <input placeholder='Current password' type='password' value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} style={inputStyle}/>
+            <input placeholder='New password' type='password' value={newPassword} onChange={e=>setNewPassword(e.target.value)} style={inputStyle}/>
+            <button onClick={changePass} style={primaryBtnStyle}>Update</button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -67,7 +338,7 @@ function AuthModal({ open, onClose, onAuth }: { open: boolean, onClose: () => vo
 const inputStyle: React.CSSProperties = { width:'100%',padding:'12px 14px',borderRadius:10,border:'1px solid #333',background:'#0d0d0d',color:'#fff',marginBottom:12 }
 const primaryBtnStyle: React.CSSProperties = { padding:'12px 18px',borderRadius:999,border:'1px solid #0ea5e9',background:'#0ea5e9',color:'#001018',fontWeight:800,cursor:'pointer' }
 
-function Home({ onStart, onOpenAuth, onTrips }: { onStart: () => void, onOpenAuth: () => void, onTrips: () => void }) {
+function Home({ authed, onStartAuth, onPlan, onTrips, onAlbums }: { authed: boolean, onStartAuth: () => void, onPlan: () => void, onTrips: () => void, onAlbums: ()=>void }) {
   return (
     <>
       {/* Hero Section */}
@@ -85,9 +356,15 @@ function Home({ onStart, onOpenAuth, onTrips }: { onStart: () => void, onOpenAut
               </p>
             </div>
             <div style={{display:'flex',gap:16,flexWrap:'wrap',justifyContent:'center'}}>
-              <button onClick={onOpenAuth} className="btn" style={{fontSize:16,padding:'14px 28px'}}>Sign in</button>
-              <button onClick={onStart} className="btn primary" style={{fontSize:18,padding:'14px 32px'}}>Get Started</button>
+              {!authed ? (
+                <button onClick={onStartAuth} className="btn primary" style={{fontSize:18,padding:'14px 32px'}}>Get Started</button>
+              ) : (
+                <>
+                  <button onClick={onAlbums} className="btn" style={{fontSize:16,padding:'14px 28px'}}>My Albums</button>
+                  <button onClick={onPlan} className="btn primary" style={{fontSize:18,padding:'14px 32px'}}>Plan</button>
               <button onClick={onTrips} className="btn" style={{fontSize:16,padding:'14px 28px'}}>My Trips</button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -267,8 +544,8 @@ function Home({ onStart, onOpenAuth, onTrips }: { onStart: () => void, onOpenAut
             Your next adventure is just a click away.
           </p>
           <div style={{display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
-            <button onClick={onStart} className="btn primary" style={{fontSize:18,padding:'16px 36px'}}>Plan My Trip</button>
-            <button onClick={onOpenAuth} className="btn" style={{fontSize:16,padding:'16px 32px'}}>Sign Up Free</button>
+            <button onClick={onPlan} className="btn primary" style={{fontSize:18,padding:'16px 36px'}}>Plan My Trip</button>
+            <button onClick={onStartAuth} className="btn" style={{fontSize:16,padding:'16px 32px'}}>Sign Up Free</button>
           </div>
         </div>
       </section>
@@ -307,6 +584,8 @@ function Planner({ token, onOpenDetails }: { token: string, onOpenDetails: (trip
   const [loading, setLoading] = useState(false)
   const [plan, setPlan] = useState<any | null>(null)
   const [trips, setTrips] = useState<any[]>([])
+  const [currentTripId, setCurrentTripId] = useState<number | null>(null)
+  const [chatInput, setChatInput] = useState('')
   const planRef = useRef<HTMLDivElement>(null)
 
   const allInterests = ['Highlights','Art','Nature','Food','History','Nightlife','Shopping','Kids','Adventure','Beach','Architecture']
@@ -334,6 +613,7 @@ function Planner({ token, onOpenDetails }: { token: string, onOpenDetails: (trip
       setBudget(data.budget)
       setDurationDays(data.durationDays)
       setInterests(data.interests)
+      setCurrentTripId(data.id)
       setTimeout(()=>planRef.current?.scrollIntoView({behavior:'smooth'}), 0)
     }
   }
@@ -357,13 +637,22 @@ function Planner({ token, onOpenDetails }: { token: string, onOpenDetails: (trip
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed')
       setPlan(data.plan)
+      setCurrentTripId(data.id)
       await loadTrips()
       setTimeout(()=>planRef.current?.scrollIntoView({behavior:'smooth'}), 0)
     } catch (e:any) { alert(e.message) }
     finally { setLoading(false) }
   }
 
+  const sendEdit = async () => {
+    if (!currentTripId || !plan || !chatInput.trim()) return
+    const res = await fetch(`/api/itineraries/${currentTripId}/edit`, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ message: chatInput, plan }) })
+    const data = await res.json().catch(()=>null)
+    if (data?.plan) { setPlan(data.plan); setChatInput(''); setTimeout(()=>planRef.current?.scrollIntoView({behavior:'smooth'}), 0) }
+  }
+
   return (
+    <>
     <div style={{maxWidth:1100,margin:'120px auto 60px',padding:'0 20px',color:'#fff'}}>
       <h2>Plan your trip</h2>
       <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:20,alignItems:'start'}}>
@@ -423,6 +712,7 @@ function Planner({ token, onOpenDetails }: { token: string, onOpenDetails: (trip
                   </div>
                 ))}
               </div>
+          <div style={{marginTop:16,opacity:0.8,fontSize:12}}>Use the AI Planner widget (bottom-right) to edit.</div>
             </div>
           )}
         </div>
@@ -447,65 +737,74 @@ function Planner({ token, onOpenDetails }: { token: string, onOpenDetails: (trip
         </aside>
       </div>
     </div>
+    {plan && (
+      <div style={{position:'fixed',right:16,bottom:16,width:360,background:'#0b0b0b',border:'1px solid #333',borderRadius:12,boxShadow:'0 10px 30px rgba(0,0,0,0.6)',padding:12,color:'#e5e7eb'}}>
+        <div style={{fontWeight:700,marginBottom:8}}>AI Planner</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:8}}>
+          <input placeholder="Tell AI how to change the plan..." value={chatInput} onChange={e=>setChatInput(e.target.value)} style={inputStyle}/>
+          <button onClick={sendEdit} style={primaryBtnStyle} disabled={!chatInput.trim()}>Apply</button>
+        </div>
+        <div style={{opacity:0.7,fontSize:12,marginTop:6}}>Edits are saved to this trip.</div>
+      </div>
+    )}
+    </>
   )
 }
 
-function TripDetails({ token, tripId, onBack }: { token: string, tripId: number, onBack: ()=>void }) {
+function TripDetails({ token, tripId, onBack, onOpenAlbum }: { token: string, tripId: number, onBack: ()=>void, onOpenAlbum: ()=>void }) {
   const [trip, setTrip] = useState<any | null>(null)
-  const [photos, setPhotos] = useState<any[]>([])
-  const [file, setFile] = useState<File | null>(null)
-  const [caption, setCaption] = useState('')
+  const [openDay, setOpenDay] = useState<number | null>(null)
 
   const load = async () => {
     const t = await fetch(`/api/itineraries/${tripId}`, { headers:{ Authorization:`Bearer ${token}` } })
     if (t.ok) setTrip(await t.json())
-    const p = await fetch(`/api/photos/${tripId}`, { headers:{ Authorization:`Bearer ${token}` } })
-    if (p.ok) setPhotos(await p.json())
   }
   useEffect(()=>{ load() }, [tripId])
 
-  const upload = async () => {
-    if (!file) return
-    const fd = new FormData()
-    fd.append('photo', file)
-    fd.append('caption', caption)
-    const res = await fetch(`/api/photos/${tripId}`, { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
-    if (res.ok) {
-      setFile(null);
-      setCaption('');
-      const el = document.getElementById('file-input') as HTMLInputElement | null;
-      if (el) el.value = '';
-      load();
-    }
-  }
-
-  const remove = async (id:number) => {
-    const res = await fetch(`/api/photos/${id}`, { method:'DELETE', headers:{ Authorization:`Bearer ${token}` } })
-    if (res.ok) setPhotos(photos.filter(p=>p.id!==id))
-  }
-
   return (
     <div style={{maxWidth:1000,margin:'120px auto 60px',padding:'0 20px',color:'#fff'}}>
-      <button onClick={onBack} style={{marginBottom:12,padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>Back</button>
+      <div style={{display:'flex',gap:8,marginBottom:12}}>
+        <button onClick={onBack} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>Back</button>
+        {trip && <button onClick={onOpenAlbum} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>{trip.destination} pics</button>}
+      </div>
       {trip && (
         <>
           <h2>Trip to {trip.destination}</h2>
           <div style={{opacity:0.9,marginBottom:12}}>{trip.durationDays} days • {trip.budget}</div>
           <div className="glass" style={{border:'1px solid #333',borderRadius:12,padding:14,marginBottom:16}}>
-            <h3 style={{marginTop:0}}>Album</h3>
-            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-              <input id="file-input" type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} />
-              <input placeholder="Caption" value={caption} onChange={e=>setCaption(e.target.value)} style={{...inputStyle,width:240}}/>
-              <button onClick={upload} style={primaryBtnStyle} disabled={!file}>Upload</button>
+            <h3 style={{marginTop:0}}>Itinerary</h3>
+            <div style={{display:'grid',gap:8}}>
+              {trip.plan?.days?.map((d:any)=> (
+                <div key={d.day} style={{border:'1px solid #333',borderRadius:8,overflow:'hidden'}}>
+                  <button onClick={()=>setOpenDay(openDay===d.day?null:d.day)} style={{width:'100%',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,padding:12,background:'rgba(255,255,255,0.03)',color:'#e5e7eb',border:'none',cursor:'pointer'}}>
+                    <strong>{d.title}</strong>
+                    <span style={{opacity:0.8,fontSize:12}}>{openDay===d.day?'−':'+'}</span>
+                  </button>
+                  {openDay===d.day && (
+                    <div style={{padding:12}}>
+                      <div style={{opacity:0.9,marginBottom:8}}>{d.summary}</div>
+                      <div style={{opacity:0.9}}>
+                        {d.morning && <div><em>Morning:</em> {d.morning}</div>}
+                        {d.afternoon && <div><em>Afternoon:</em> {d.afternoon}</div>}
+                        {d.evening && <div><em>Evening:</em> {d.evening}</div>}
+                      </div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:6}}>
+                        <div>
+                          <em>Attractions</em>
+                          <ul>
+                            {d.attractions?.map((a:any,i:number)=>(<li key={i}>{a.name} — {a.type}{a.notes?` — ${a.notes}`:''}</li>))}
+                          </ul>
+                        </div>
+                        <div>
+                          <em>Restaurants</em>
+                          <ul>
+                            {d.restaurants?.map((r:any,i:number)=>(<li key={i}>{r.name} — {r.cuisine}{r.notes?` — ${r.notes}`:''}</li>))}
+                          </ul>
+                        </div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))',gap:10,marginTop:12}}>
-              {photos.map(p=> (
-                <div key={p.id} className="glass" style={{border:'1px solid #333',borderRadius:8,padding:8}}>
-                  <img src={`/uploads/${p.filename}`} alt={p.caption||''} style={{width:'100%',height:160,objectFit:'cover',borderRadius:6,display:'block'}} onError={(e)=>{(e.target as HTMLImageElement).style.opacity='0.3'}}/>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
-                    <div style={{opacity:0.9,fontSize:12}}>{p.caption||''}</div>
-                    <button onClick={()=>remove(p.id)} style={{padding:'4px 8px',borderRadius:6,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer'}}>Delete</button>
+                      <div style={{marginTop:6}}><em>Transport:</em> {d.transport}</div>
                   </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -516,7 +815,7 @@ function TripDetails({ token, tripId, onBack }: { token: string, tripId: number,
   )
 }
 
-function TripsPage({ token, onOpenDetails }: { token: string, onOpenDetails: (id:number)=>void }) {
+function TripsPage({ token, onOpenDetails, onOpenAlbum }: { token: string, onOpenDetails: (id:number)=>void, onOpenAlbum: (id:number)=>void }) {
   const [trips, setTrips] = useState<any[]>([])
   const load = async () => {
     const res = await fetch('/api/itineraries', { headers:{ Authorization:`Bearer ${token}` } })
@@ -528,12 +827,13 @@ function TripsPage({ token, onOpenDetails }: { token: string, onOpenDetails: (id
       <h2>My Trips</h2>
       <div style={{display:'grid',gap:10}}>
         {trips.map(t => (
-          <div key={t.id} className="glass" style={{border:'1px solid #333',borderRadius:12,padding:12,display:'grid',gridTemplateColumns:'1fr auto',alignItems:'center'}}>
+          <div key={t.id} className="glass" style={{border:'1px solid #333',borderRadius:12,padding:12,display:'grid',gridTemplateColumns:'1fr auto auto',alignItems:'center',gap:8}}>
             <div>
               <div style={{fontWeight:700}}>{t.destination}</div>
               <div style={{opacity:0.8,fontSize:12}}>{t.durationDays} days • {t.budget} • {new Date(t.createdAt || t.created_at).toLocaleDateString()}</div>
             </div>
             <button onClick={()=>onOpenDetails(t.id)} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>Open</button>
+            <button onClick={()=>onOpenAlbum(t.id)} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>My Album</button>
           </div>
         ))}
       </div>
@@ -542,20 +842,44 @@ function TripsPage({ token, onOpenDetails }: { token: string, onOpenDetails: (id
 }
 
 export function App() {
-  const [route, setRoute] = useState<'home'|'planner'|'trip-details'|'trips'>('home')
+  const [route, setRoute] = useState<'home'|'planner'|'trip-details'|'trips'|'albums'|'album'>('home')
   const [authOpen, setAuthOpen] = useState(false)
   const [token, setToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem('journai_token') : null)
   const [detailsTripId, setDetailsTripId] = useState<number | null>(null)
   const canPlan = useMemo(()=>!!token, [token])
+  const [user, setUser] = useState<any|null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [numTrips, setNumTrips] = useState<number>(0)
 
-  const setTokenPersist = (t:string|null) => { setToken(t); if (t) localStorage.setItem('journai_token', t); else localStorage.removeItem('journai_token') }
+  useEffect(()=>{
+    if (!token) { setUser(null); setNumTrips(0); return }
+    ;(async()=>{
+      const [uRes, tRes] = await Promise.all([
+        fetch('/api/auth/me', { headers:{ Authorization:`Bearer ${token}` } }).catch(()=>null),
+        fetch('/api/itineraries', { headers:{ Authorization:`Bearer ${token}` } }).catch(()=>null)
+      ])
+      if (uRes?.ok) setUser(await uRes.json()); else setUser(null)
+      if (tRes?.ok) { const list = await tRes.json(); setNumTrips(Array.isArray(list)?list.length:0) } else setNumTrips(0)
+    })()
+  }, [token])
+
+  const setTokenPersist = (t:string|null) => { setToken(t); if (t) localStorage.setItem('journai_token', t); else localStorage.removeItem('journai_token'); if (!t) { setRoute('home') } }
+  useEffect(()=>{
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const tripId = params.get('tripId')
+    if (tripId && token) { setDetailsTripId(Number(tripId)); setRoute('trip-details') }
+  }, [token])
+
+  const ctaLabel = numTrips > 0 ? 'Plan Another Trip' : 'Get Started'
 
   return (
     <>
-      <NavBar onHome={()=>setRoute('home')} onOpenAuth={()=>setAuthOpen(true)} onStart={()=>setRoute('planner')} showBrand={route!=='home'} token={token} onLogout={()=>setTokenPersist(null)} />
+      <NavBar onHome={()=>setRoute('home')} onOpenAuth={()=>setAuthOpen(true)} goPlan={()=>setRoute('planner')} goTrips={()=>setRoute('trips')} goAlbums={()=>setRoute('albums')} showBrand={route!=='home'} token={token} onLogout={()=>setTokenPersist(null)} user={user} onOpenProfile={()=>setProfileOpen(true)} route={route} />
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={(t)=>setTokenPersist(t)} />
+      {token && <ProfileModal open={profileOpen} onClose={()=>setProfileOpen(false)} token={token} onUpdated={(u)=>setUser(u)} />}
       {route==='home' ? (
-        <Home onStart={()=>setRoute('planner')} onOpenAuth={()=>setAuthOpen(true)} onTrips={()=>setRoute('trips')} />
+        <Home authed={!!token} onStartAuth={()=>setAuthOpen(true)} onPlan={()=>setRoute('planner')} onTrips={()=>setRoute('trips')} onAlbums={()=>setRoute('albums')} />
       ) : route==='planner' ? (
         canPlan ? <Planner token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoute('trip-details') }} /> : (
           <div style={{display:'grid',placeItems:'center',minHeight:'100vh',color:'#fff'}}>
@@ -566,9 +890,13 @@ export function App() {
           </div>
         )
       ) : route==='trips' ? (
-        canPlan ? <TripsPage token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoute('trip-details') }} /> : null
+        canPlan ? <TripsPage token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoute('trip-details') }} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoute('album') }} /> : null
+      ) : route==='albums' ? (
+        canPlan ? <AllAlbumsPage token={token!} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoute('album') }} /> : null
+      ) : route==='album' ? (
+        canPlan && detailsTripId!=null ? <AlbumPage token={token!} tripId={detailsTripId} onBack={()=>setRoute('trips')} /> : null
       ) : (
-        canPlan && detailsTripId!=null ? <TripDetails token={token!} tripId={detailsTripId} onBack={()=>setRoute('trips')} /> : null
+        canPlan && detailsTripId!=null ? <TripDetails token={token!} tripId={detailsTripId} onBack={()=>setRoute('trips')} onOpenAlbum={()=>setRoute('album')} /> : null
       )}
     </>
   )
