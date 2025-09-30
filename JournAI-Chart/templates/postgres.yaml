@@ -32,7 +32,7 @@ spec:
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
-            claimName: data-journai-postgresql-0 
+            claimName: {{ include "journai.fullname" . }}-uploads 
 ---
 apiVersion: v1
 kind: Service
