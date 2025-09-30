@@ -1,0 +1,106 @@
+# Default values for journai
+
+# Global configuration
+global:
+  storageClass: ""
+
+# Backend configuration
+backend:
+  replicaCount: 2
+  
+  image:
+    repository: noylevi/journai-backend
+    pullPolicy: IfNotPresent
+    tag: "v1.0"
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: PORT
+      value: "3000"
+    - name: DB_CLIENT
+      value: "postgres"
+    - name: DB_HOST
+      value: "journai-postgresql"
+    - name: DB_PORT
+      value: "5432"
+    - name: DB_NAME
+      value: "journai"
+    - name: DB_USER
+      value: "journai"
+  
+  # Secrets should be provided via envFrom
+  envFrom:
+    - secretRef:
+        name: journai-secrets
+
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: "local-path"
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    mountPath: /app/uploads
+
+# Frontend configuration
+frontend:
+  replicaCount: 2
+  
+  image:
+    repository: noylevi/journai-frontend
+    pullPolicy: IfNotPresent
+    tag: "v1.0"
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+# Ingress configuration
+ingress:
+  enabled: true
+  className: traefik #:"nginx"
+  hosts:
+    - host: journai.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend: frontend
+        - path: /api
+          pathType: Prefix
+          backend: backend
+        - path: /uploads
+          pathType: Prefix
+          backend: backend
+
+# Secrets configuration
+secrets:
+  # JWT secret for token signing
+  jwtSecret: "0a750ec6c01b0324881d80c1beae3832c8f520b009fde8b6038d76ac15cbdada"
+  
+  # OpenAI API key (optional)
+  openaiApiKey: ""
+  
+  # Database password
+  dbPassword: "journai"
