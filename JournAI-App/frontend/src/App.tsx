@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
+import { Pencil, Trash2, ChevronRight, Bot, Zap, DollarSign, Camera, Globe, Target } from 'lucide-react'
 
 function NavBar({ onHome, onOpenAuth, goPlan, goTrips, goAlbums, showBrand, token, onLogout, user, onOpenProfile, route }: { onHome: () => void, onOpenAuth: () => void, goPlan: () => void, goTrips: () => void, goAlbums: ()=>void, showBrand: boolean, token: string | null, onLogout: ()=>void, user: any | null, onOpenProfile: ()=>void, route: string }) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -131,29 +132,34 @@ function AlbumPage({ token, tripId, onBack }: { token: string, tripId: number, o
             {albums.map(a => (
               <div key={a.id} style={{display:'flex',alignItems:'center',gap:6}}>
                 <button onClick={()=>setActiveAlbumId(a.id)} style={{padding:'6px 10px',borderRadius:8,border:`1px solid ${activeAlbumId===a.id?'#0ea5e9':'#333'}`,background:activeAlbumId===a.id?'#0ea5e9':'transparent',color:activeAlbumId===a.id?'#001018':'#e5e7eb',cursor:'pointer'}}>{a.name}</button>
-                <button onClick={()=>renameAlbum(a.id)} title="Rename" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>✎</button>
-                <button onClick={()=>deleteAlbum(a.id)} title="Delete" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer'}}>×</button>
+                <button onClick={()=>renameAlbum(a.id)} title="Rename" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer',display:'grid',placeItems:'center'}}><Pencil size={14} /></button>
+                <button onClick={()=>deleteAlbum(a.id)} title="Delete" style={{padding:'4px 6px',borderRadius:6,border:'1px solid #7f1d1d',background:'#7f1d1d',color:'#fff',cursor:'pointer',display:'grid',placeItems:'center'}}><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
           <button onClick={createAlbum} style={{padding:'6px 10px',borderRadius:8,border:'1px solid #333',background:'transparent',color:'#e5e7eb',cursor:'pointer'}}>+ New album</button>
         </div>
-        <div style={{display:'grid',gap:8,marginTop:10}}>
-          <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-            <input id="file-input" type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} />
-            <button onClick={upload} style={primaryBtnStyle} disabled={!file || activeAlbumId==null}>Upload</button>
-          </div>
-          {file && (
+        {activeAlbumId !== null ? (
+          <div style={{display:'grid',gap:8,marginTop:10}}>
             <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-              <input placeholder="Title (optional)" value={title} onChange={e=>setTitle(e.target.value)} style={{...inputStyle,width:180}}/>
-              <input placeholder="Caption (optional)" value={caption} onChange={e=>setCaption(e.target.value)} style={{...inputStyle,width:220}}/>
-              <input type="date" placeholder="Date" value={takenAt} onChange={e=>setTakenAt(e.target.value)} style={{...inputStyle,width:180}}/>
-              <input placeholder="Location (optional)" value={location} onChange={e=>setLocation(e.target.value)} style={{...inputStyle,width:200}}/>
-              <input placeholder="Tags (comma-separated)" value={tags} onChange={e=>setTags(e.target.value)} style={{...inputStyle,width:240}}/>
+              <input id="file-input" type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} />
+              <button onClick={upload} style={primaryBtnStyle} disabled={!file}>Upload</button>
             </div>
-          )}
-          {activeAlbumId==null && <div style={{opacity:0.8,fontSize:12}}>Tip: create/select a sub‑album to upload. General aggregates all photos.</div>}
-        </div>
+            {file && (
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                <input placeholder="Title (optional)" value={title} onChange={e=>setTitle(e.target.value)} style={{...inputStyle,width:180}}/>
+                <input placeholder="Caption (optional)" value={caption} onChange={e=>setCaption(e.target.value)} style={{...inputStyle,width:220}}/>
+                <input type="date" placeholder="Date" value={takenAt} onChange={e=>setTakenAt(e.target.value)} style={{...inputStyle,width:180,colorScheme:'dark'}}/>
+                <input placeholder="Location (optional)" value={location} onChange={e=>setLocation(e.target.value)} style={{...inputStyle,width:200}}/>
+                <input placeholder="Tags (comma-separated)" value={tags} onChange={e=>setTags(e.target.value)} style={{...inputStyle,width:240}}/>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{opacity:0.8,fontSize:13,marginTop:10,padding:12,background:'rgba(14,165,233,0.1)',border:'1px solid rgba(14,165,233,0.3)',borderRadius:8}}>
+            💡 <strong>General</strong> shows all photos from your albums. To upload photos, create or select a specific album above.
+          </div>
+        )}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))',gap:10,marginTop:12}}>
           {(activeAlbumId==null ? photos : filtered).map(p => (
             <div key={p.id} className="glass" style={{border:'1px solid #333',borderRadius:8,padding:8}}>
@@ -256,8 +262,14 @@ function ProfileModal({ open, onClose, token, onUpdated }: { open: boolean, onCl
     if (!f) return
     const reader = new FileReader(); reader.onload = async () => {
       const dataUrl = reader.result as string
+      // Update UI immediately for better UX
+      setAvatar(dataUrl)
       const res = await fetch('/api/auth/me/avatar', { method:'PUT', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ avatar: dataUrl }) })
-      if (res.ok) { const u = await res.json(); setAvatar(u.avatar||''); onUpdated(u) }
+      if (res.ok) { 
+        const u = await res.json()
+        setAvatar(u.avatar||'')
+        onUpdated(u)
+      }
     }; reader.readAsDataURL(f)
   }
   return (
@@ -400,32 +412,32 @@ function Home({ authed, onStartAuth, onPlan, onTrips, onAlbums }: { authed: bool
           <h2 style={{textAlign:'center',fontSize:48,fontWeight:800,marginBottom:60,color:'#fff'}}>Why Choose JournAI?</h2>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(350px, 1fr))',gap:32}}>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>🤖</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><Bot size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>AI-Powered Planning</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>Leverage cutting-edge artificial intelligence to discover hidden gems and create personalized experiences that match your unique travel style.</p>
             </div>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>⚡</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><Zap size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Instant Results</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>Get comprehensive travel plans in seconds, not hours. No more endless research - just tell us what you want and we'll handle the rest.</p>
             </div>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>💰</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><DollarSign size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Budget-Conscious</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>From shoestring adventures to luxury getaways, our AI adapts to your budget and finds the best value for your money.</p>
             </div>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>📱</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><Camera size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Digital Memory Book</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>Capture and organize your travel memories with our built-in photo album feature. Every trip becomes a beautiful digital story.</p>
             </div>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>🌍</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><Globe size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Global Coverage</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>From bustling cities to remote destinations, our AI has knowledge of places worldwide to create amazing itineraries anywhere.</p>
             </div>
             <div className="glass" style={{padding:28,borderRadius:16}}>
-              <div style={{fontSize:48,marginBottom:16}}>🎯</div>
+              <div style={{marginBottom:16,color:'#7bdcff'}}><Target size={48} strokeWidth={1.5} /></div>
               <h3 style={{fontSize:24,fontWeight:700,marginBottom:16,color:'#fff'}}>Personalized Experience</h3>
               <p style={{opacity:0.9,lineHeight:1.6}}>Every itinerary is uniquely tailored to your interests, whether you love art, nature, food, adventure, or cultural experiences.</p>
             </div>
@@ -489,7 +501,6 @@ function Home({ authed, onStartAuth, onPlan, onTrips, onAlbums }: { authed: bool
             <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
               <div style={{height:200,backgroundImage:'url(/rome.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
                 <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
-                <div style={{fontSize:48,zIndex:1}}>🏛️</div>
               </div>
               <div style={{padding:24}}>
                 <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Cultural Heritage Tour</h3>
@@ -504,7 +515,6 @@ function Home({ authed, onStartAuth, onPlan, onTrips, onAlbums }: { authed: bool
             <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
               <div style={{height:200,backgroundImage:'url(/Swiss-Alps.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
                 <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
-                <div style={{fontSize:48,zIndex:1}}>🏔️</div>
               </div>
               <div style={{padding:24}}>
                 <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Nature Adventure</h3>
@@ -519,7 +529,6 @@ function Home({ authed, onStartAuth, onPlan, onTrips, onAlbums }: { authed: bool
             <div className="glass" style={{padding:0,borderRadius:16,overflow:'hidden'}}>
               <div style={{height:200,backgroundImage:'url(/Bali.jpg)',backgroundSize:'cover',backgroundPosition:'center',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
                 <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)'}}></div>
-                <div style={{fontSize:48,zIndex:1}}>🏖️</div>
               </div>
               <div style={{padding:24}}>
                 <h3 style={{fontSize:24,fontWeight:700,marginBottom:12,color:'#fff'}}>Tropical Paradise</h3>
@@ -842,10 +851,17 @@ function TripsPage({ token, onOpenDetails, onOpenAlbum }: { token: string, onOpe
 }
 
 export function App() {
-  const [route, setRoute] = useState<'home'|'planner'|'trip-details'|'trips'|'albums'|'album'>('home')
+  const [route, _setRoute] = useState<'home'|'planner'|'trip-details'|'trips'|'albums'|'album'>(()=>{
+    if (typeof window === 'undefined') return 'home'
+    return (localStorage.getItem('journai_route') as any) || 'home'
+  })
   const [authOpen, setAuthOpen] = useState(false)
   const [token, setToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem('journai_token') : null)
-  const [detailsTripId, setDetailsTripId] = useState<number | null>(null)
+  const [detailsTripId, _setDetailsTripId] = useState<number | null>(()=>{
+    if (typeof window === 'undefined') return null
+    const v = localStorage.getItem('journai_tripId')
+    return v ? Number(v) : null
+  })
   const canPlan = useMemo(()=>!!token, [token])
   const [user, setUser] = useState<any|null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -863,25 +879,36 @@ export function App() {
     })()
   }, [token])
 
-  const setTokenPersist = (t:string|null) => { setToken(t); if (t) localStorage.setItem('journai_token', t); else localStorage.removeItem('journai_token'); if (!t) { setRoute('home') } }
+  const setRoutePersist = (r: 'home'|'planner'|'trip-details'|'trips'|'albums'|'album') => {
+    _setRoute(r)
+    if (typeof window !== 'undefined') localStorage.setItem('journai_route', r)
+  }
+  const setDetailsTripId = (id: number | null) => {
+    _setDetailsTripId(id)
+    if (typeof window !== 'undefined') {
+      if (id == null) localStorage.removeItem('journai_tripId')
+      else localStorage.setItem('journai_tripId', String(id))
+    }
+  }
+  const setTokenPersist = (t:string|null) => { setToken(t); if (t) localStorage.setItem('journai_token', t); else localStorage.removeItem('journai_token'); if (!t) { setRoutePersist('home'); setDetailsTripId(null) } }
   useEffect(()=>{
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const tripId = params.get('tripId')
-    if (tripId && token) { setDetailsTripId(Number(tripId)); setRoute('trip-details') }
+    if (tripId && token) { setDetailsTripId(Number(tripId)); setRoutePersist('trip-details') }
   }, [token])
 
   const ctaLabel = numTrips > 0 ? 'Plan Another Trip' : 'Get Started'
 
   return (
     <>
-      <NavBar onHome={()=>setRoute('home')} onOpenAuth={()=>setAuthOpen(true)} goPlan={()=>setRoute('planner')} goTrips={()=>setRoute('trips')} goAlbums={()=>setRoute('albums')} showBrand={route!=='home'} token={token} onLogout={()=>setTokenPersist(null)} user={user} onOpenProfile={()=>setProfileOpen(true)} route={route} />
+      <NavBar onHome={()=>setRoutePersist('home')} onOpenAuth={()=>setAuthOpen(true)} goPlan={()=>setRoutePersist('planner')} goTrips={()=>setRoutePersist('trips')} goAlbums={()=>setRoutePersist('albums')} showBrand={route!=='home'} token={token} onLogout={()=>setTokenPersist(null)} user={user} onOpenProfile={()=>setProfileOpen(true)} route={route} />
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} onAuth={(t)=>setTokenPersist(t)} />
       {token && <ProfileModal open={profileOpen} onClose={()=>setProfileOpen(false)} token={token} onUpdated={(u)=>setUser(u)} />}
       {route==='home' ? (
-        <Home authed={!!token} onStartAuth={()=>setAuthOpen(true)} onPlan={()=>setRoute('planner')} onTrips={()=>setRoute('trips')} onAlbums={()=>setRoute('albums')} />
+        <Home authed={!!token} onStartAuth={()=>setAuthOpen(true)} onPlan={()=>setRoutePersist('planner')} onTrips={()=>setRoutePersist('trips')} onAlbums={()=>setRoutePersist('albums')} />
       ) : route==='planner' ? (
-        canPlan ? <Planner token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoute('trip-details') }} /> : (
+        canPlan ? <Planner token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoutePersist('trip-details') }} /> : (
           <div style={{display:'grid',placeItems:'center',minHeight:'100vh',color:'#fff'}}>
             <div style={{marginTop:100,textAlign:'center'}}>
               <p>Please sign in to start planning.</p>
@@ -890,13 +917,13 @@ export function App() {
           </div>
         )
       ) : route==='trips' ? (
-        canPlan ? <TripsPage token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoute('trip-details') }} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoute('album') }} /> : null
+        canPlan ? <TripsPage token={token!} onOpenDetails={(id)=>{ setDetailsTripId(id); setRoutePersist('trip-details') }} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoutePersist('album') }} /> : null
       ) : route==='albums' ? (
-        canPlan ? <AllAlbumsPage token={token!} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoute('album') }} /> : null
+        canPlan ? <AllAlbumsPage token={token!} onOpenAlbum={(id)=>{ setDetailsTripId(id); setRoutePersist('album') }} /> : null
       ) : route==='album' ? (
-        canPlan && detailsTripId!=null ? <AlbumPage token={token!} tripId={detailsTripId} onBack={()=>setRoute('trips')} /> : null
+        canPlan && detailsTripId!=null ? <AlbumPage token={token!} tripId={detailsTripId} onBack={()=>setRoutePersist('trips')} /> : null
       ) : (
-        canPlan && detailsTripId!=null ? <TripDetails token={token!} tripId={detailsTripId} onBack={()=>setRoute('trips')} onOpenAlbum={()=>setRoute('album')} /> : null
+        canPlan && detailsTripId!=null ? <TripDetails token={token!} tripId={detailsTripId} onBack={()=>setRoutePersist('trips')} onOpenAlbum={()=>{ setRoutePersist('album') }} /> : null
       )}
     </>
   )

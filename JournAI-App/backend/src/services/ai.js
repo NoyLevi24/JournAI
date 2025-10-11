@@ -1,65 +1,143 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import OpenAI from 'openai'
 
-const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
-export const usingOpenAI = !!client
+// Try Gemini first (free!), fallback to OpenAI
+const geminiKey = process.env.GEMINI_API_KEY
+const openaiKey = process.env.OPENAI_API_KEY
+
+const genAI = geminiKey ? new GoogleGenerativeAI(geminiKey) : null
+const openaiClient = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null
+
+export const usingAI = !!(genAI || openaiClient)
+export const aiProvider = genAI ? 'Gemini (Free!)' : openaiClient ? 'OpenAI' : 'Rule-based'
 
 export async function generateItinerary({ destination, budget, durationDays, interests }) {
-	if (!client) {
-		return ruleBasedPlan({ destination, budget, durationDays, interests })
-	}
-	try {
-		const prompt = [
-			"You are an expert trip planner.",
-			"Create a detailed, day-by-day itinerary in ENGLISH for the trip below.",
-			"Inputs:",
-			`Destination: ${destination}`,
-			`Duration: ${durationDays} days`,
-			`Interests: ${interests.join(', ')}`,
-			`Budget: ${budget}`,
-			"Requirements:",
-			"- For EACH day (from morning to evening), suggest concrete activities and places.",
-			"- Tailor all choices to the interests and budget.",
-			"- Add a short explanatory note for each attraction and restaurant (why it fits).",
-			"- Include transport guidance for the day (how to move between sites).",
-			"Output JSON ONLY (no markdown). Use EXACTLY this schema:",
-			"{",
-			"  \"destination\": string,",
-			"  \"budget\": string,",
-			"  \"durationDays\": number,",
-			"  \"interests\": string[],",
-			"  \"days\": [",
-			"    {",
-			"      \"day\": number,",
-			"      \"title\": string,",
-			"      \"summary\": string,",
-			"      \"morning\": string,",
-			"      \"afternoon\": string,",
-			"      \"evening\": string,",
-			"      \"attractions\": [ { \"name\": string, \"type\": string, \"neighborhood\": string, \"notes\": string } ],",
-			"      \"restaurants\": [ { \"name\": string, \"cuisine\": string, \"notes\": string } ],",
-			"      \"transport\": string",
-			"    }",
-			"  ]",
-			"}",
-			"Return compact minified JSON."
-		].join('\n')
-
-		const res = await client.chat.completions.create({
-			model: 'gpt-4o-mini',
-			messages: [
-				{ role: 'system', content: 'You are a travel planner that returns concise JSON only.' },
-				{ role: 'user', content: prompt }
-			]
-		})
-		const text = res.choices?.[0]?.message?.content || '{}'
-		const parsed = JSON.parse(text)
-		if (!parsed || !Array.isArray(parsed.days) || parsed.days.length === 0) {
-			return ruleBasedPlan({ destination, budget, durationDays, interests })
+	// Try Gemini first (it's free!)
+	if (genAI) {
+		try {
+			return await generateWithGemini({ destination, budget, durationDays, interests })
+		} catch (e) {
+			console.error('Gemini failed, trying OpenAI fallback:', e.message)
 		}
-		return parsed
-	} catch (e) {
-		return ruleBasedPlan({ destination, budget, durationDays, interests })
 	}
+	
+	// Fallback to OpenAI
+	if (openaiClient) {
+		try {
+			return await generateWithOpenAI({ destination, budget, durationDays, interests })
+		} catch (e) {
+			console.error('OpenAI failed, using rule-based:', e.message)
+		}
+	}
+	
+	// Final fallback: rule-based
+	return ruleBasedPlan({ destination, budget, durationDays, interests })
+}
+
+async function generateWithGemini({ destination, budget, durationDays, interests }) {
+	// Use gemini-2.5-flash - the correct model name from Google AI Studio
+	const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+	
+	const prompt = [
+		"You are an expert trip planner.",
+		"Create a detailed, day-by-day itinerary in ENGLISH for the trip below.",
+		"Inputs:",
+		`Destination: ${destination}`,
+		`Duration: ${durationDays} days`,
+		`Interests: ${interests.join(', ')}`,
+		`Budget: ${budget}`,
+		"Requirements:",
+		"- For EACH day (from morning to evening), suggest concrete activities and places.",
+		"- Tailor all choices to the interests and budget.",
+		"- Add a short explanatory note for each attraction and restaurant (why it fits).",
+		"- Include transport guidance for the day (how to move between sites).",
+		"Output JSON ONLY (no markdown, no code blocks). Use EXACTLY this schema:",
+		"{",
+		"  \"destination\": string,",
+		"  \"budget\": string,",
+		"  \"durationDays\": number,",
+		"  \"interests\": string[],",
+		"  \"days\": [",
+		"    {",
+		"      \"day\": number,",
+		"      \"title\": string,",
+		"      \"summary\": string,",
+		"      \"morning\": string,",
+		"      \"afternoon\": string,",
+		"      \"evening\": string,",
+		"      \"attractions\": [ { \"name\": string, \"type\": string, \"neighborhood\": string, \"notes\": string } ],",
+		"      \"restaurants\": [ { \"name\": string, \"cuisine\": string, \"notes\": string } ],",
+		"      \"transport\": string",
+		"    }",
+		"  ]",
+		"}",
+		"Return compact minified JSON."
+	].join('\n')
+
+	const result = await model.generateContent(prompt)
+	const response = await result.response
+	let text = response.text()
+	
+	// Clean up markdown code blocks if present
+	text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+	
+	const parsed = JSON.parse(text)
+	if (!parsed || !Array.isArray(parsed.days) || parsed.days.length === 0) {
+		throw new Error('Invalid response from Gemini')
+	}
+	return parsed
+}
+
+async function generateWithOpenAI({ destination, budget, durationDays, interests }) {
+	const prompt = [
+		"You are an expert trip planner.",
+		"Create a detailed, day-by-day itinerary in ENGLISH for the trip below.",
+		"Inputs:",
+		`Destination: ${destination}`,
+		`Duration: ${durationDays} days`,
+		`Interests: ${interests.join(', ')}`,
+		`Budget: ${budget}`,
+		"Requirements:",
+		"- For EACH day (from morning to evening), suggest concrete activities and places.",
+		"- Tailor all choices to the interests and budget.",
+		"- Add a short explanatory note for each attraction and restaurant (why it fits).",
+		"- Include transport guidance for the day (how to move between sites).",
+		"Output JSON ONLY (no markdown). Use EXACTLY this schema:",
+		"{",
+		"  \"destination\": string,",
+		"  \"budget\": string,",
+		"  \"durationDays\": number,",
+		"  \"interests\": string[],",
+		"  \"days\": [",
+		"    {",
+		"      \"day\": number,",
+		"      \"title\": string,",
+		"      \"summary\": string,",
+		"      \"morning\": string,",
+		"      \"afternoon\": string,",
+		"      \"evening\": string,",
+		"      \"attractions\": [ { \"name\": string, \"type\": string, \"neighborhood\": string, \"notes\": string } ],",
+		"      \"restaurants\": [ { \"name\": string, \"cuisine\": string, \"notes\": string } ],",
+		"      \"transport\": string",
+		"    }",
+		"  ]",
+		"}",
+		"Return compact minified JSON."
+	].join('\n')
+
+	const res = await openaiClient.chat.completions.create({
+		model: 'gpt-4o-mini',
+		messages: [
+			{ role: 'system', content: 'You are a travel planner that returns concise JSON only.' },
+			{ role: 'user', content: prompt }
+		]
+	})
+	const text = res.choices?.[0]?.message?.content || '{}'
+	const parsed = JSON.parse(text)
+	if (!parsed || !Array.isArray(parsed.days) || parsed.days.length === 0) {
+		throw new Error('Invalid response from OpenAI')
+	}
+	return parsed
 }
 
 function pick(arr, i) { return arr[i % arr.length] }

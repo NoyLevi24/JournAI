@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 import { initDatabase } from './storage/db.js'
 import authRouter from './routes/auth.js'
 import itineraryRouter from './routes/itineraries.js'
-import { usingOpenAI } from './services/ai.js'
+import { usingAI, aiProvider } from './services/ai.js'
 import photosRouter from './routes/photos.js'
 import albumsRouter from './routes/albums.js'
 
@@ -15,7 +15,8 @@ dotenv.config()
 
 const app = express()
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '50mb' }))  // Allow large avatar images
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -23,7 +24,7 @@ const __dirname = path.dirname(__filename)
 await initDatabase()
 
 app.get('/api/health', (req, res) => {
-	res.json({ ok: true, usingOpenAI })
+	res.json({ ok: true, usingAI, aiProvider })
 })
 
 app.use('/api/auth', authRouter)

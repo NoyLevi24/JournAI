@@ -1,28 +1,32 @@
-# Production docker-compose
-# Usage: docker-compose up -d
-# Note: Backend and frontend run as non-root user (10001:10001)
+# Development docker-compose with hot-reload and PostgreSQL
+# Usage: docker-compose -f docker-compose.dev.yml up
+# Note: Uses PostgreSQL (same as production) for AWS RDS compatibility
 
 services:
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    user: "10001:10001"  # Run as non-root for security
+    user: "10001:10001"
     env_file:
       - backend/.env
     environment:
       - PORT=3000
+      - NODE_ENV=development
       - DB_CLIENT=postgres
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=journai
+      - DB_NAME=journai_dev
       - DB_USER=journai
-      - DB_PASSWORD=journai
+      - DB_PASSWORD=journai_dev_password
     volumes:
+      # Mount source code for hot-reload
+      - ./backend/src:/app/src:ro
       - backend-uploads:/app/uploads
       - backend-data:/app/data
     ports:
       - "3000:3000"
+    command: npm run dev
     depends_on:
       db:
         condition: service_healthy
@@ -32,23 +36,29 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    user: "10001:10001"  # Run as non-root for security
+      target: build
+    user: "10001:10001"
+    volumes:
+      # Mount source code for hot-reload
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+    ports:
+      - "5173:5173"
+    command: npm run dev
     depends_on:
       - backend
-    ports:
-      - "80:8080"  # Frontend nginx listens on 8080 (non-privileged port)
     restart: unless-stopped
 
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: journai
+      POSTGRES_DB: journai_dev
       POSTGRES_USER: journai
-      POSTGRES_PASSWORD: journai
+      POSTGRES_PASSWORD: journai_dev_password
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data-dev:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -57,6 +67,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  db-data:
   backend-uploads:
   backend-data:
+  db-data-dev:

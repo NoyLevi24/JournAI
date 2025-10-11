@@ -17,13 +17,34 @@ spec:
         {{- include "journai.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: frontend
         image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
         ports:
         - name: http
           containerPort: {{ .Values.frontend.service.targetPort }}
           protocol: TCP
+        volumeMounts:
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: run
+          mountPath: /var/run
         resources:
           {{- toYaml .Values.frontend.resources | nindent 12 }}
+      volumes:
+      - name: cache
+        emptyDir: {}
+      - name: run
+        emptyDir: {}

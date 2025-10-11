@@ -3,6 +3,8 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "journai.fullname" . }}-uploads
+  annotations:
+    "helm.sh/resource-policy": keep
   labels:
     {{- include "journai.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend

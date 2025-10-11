@@ -100,28 +100,61 @@ router.post('/:id/edit', requireAuth, async (req, res) => {
   const { message, plan } = req.body || {}
   if (!message || !plan) return res.status(400).json({ error: 'Missing message or plan' })
   let updated = plan
-  const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
-  if (!client) {
-    // Simple rule-based tweak if no OpenAI
-    updated = { ...plan, days: (plan.days||[]).map((d)=> ({ ...d, summary: (d.summary||'') + ' (edited)' })) }
-    await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
-    return res.json({ plan: updated })
+  
+  // Try Gemini first, then OpenAI
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+  const geminiKey = process.env.GEMINI_API_KEY
+  const openaiKey = process.env.OPENAI_API_KEY
+  
+  // Try Gemini
+  if (geminiKey) {
+    try {
+      const genAI = new GoogleGenerativeAI(geminiKey)
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      
+      const prompt = [
+        'You edit a travel itinerary JSON when given user change requests.',
+        'Given this current plan JSON:',
+        JSON.stringify(plan),
+        'Apply this user request and return ONLY the full updated plan JSON (no markdown, no explanation):',
+        message
+      ].join('\n')
+      
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      let text = response.text()
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      updated = JSON.parse(text)
+      await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
+      return res.json({ plan: updated })
+    } catch (e) {
+      console.error('Gemini edit failed:', e.message)
+    }
   }
-  try {
-    const sys = 'You edit a travel itinerary JSON when given user change requests. Return JSON only.'
-    const user = [
-      'Given this current plan JSON:',
-      JSON.stringify(plan),
-      'Apply this user request and return the full updated plan JSON only:',
-      message
-    ].join('\n')
-    const out = await client.chat.completions.create({ model:'gpt-4o-mini', messages:[{role:'system', content:sys},{role:'user',content:user}] })
-    const text = out.choices?.[0]?.message?.content || ''
-    const parsed = JSON.parse(text)
-    updated = parsed
-  } catch (e) {
-    updated = { ...plan, days: (plan.days||[]).map((d)=> ({ ...d, summary: (d.summary||'') + ' (edited)' })) }
+  
+  // Fallback to OpenAI
+  const client = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null
+  if (client) {
+    try {
+      const sys = 'You edit a travel itinerary JSON when given user change requests. Return JSON only.'
+      const user = [
+        'Given this current plan JSON:',
+        JSON.stringify(plan),
+        'Apply this user request and return the full updated plan JSON only:',
+        message
+      ].join('\n')
+      const out = await client.chat.completions.create({ model:'gpt-4o-mini', messages:[{role:'system', content:sys},{role:'user',content:user}] })
+      const text = out.choices?.[0]?.message?.content || ''
+      updated = JSON.parse(text)
+      await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
+      return res.json({ plan: updated })
+    } catch (e) {
+      console.error('OpenAI edit failed:', e.message)
+    }
   }
+  
+  // Final fallback: simple rule-based
+  updated = { ...plan, days: (plan.days||[]).map((d)=> ({ ...d, summary: (d.summary||'') + ' (edited)' })) }
   await run('UPDATE itineraries SET plan_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [JSON.stringify(updated), req.params.id, req.userId])
   res.json({ plan: updated })
 })

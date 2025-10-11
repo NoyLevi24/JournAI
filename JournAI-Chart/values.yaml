@@ -10,8 +10,8 @@ backend:
   
   image:
     repository: noylevi/journai-backend
-    pullPolicy: IfNotPresent
-    tag: "v1.0"
+    pullPolicy: Always
+    tag: "v1.4"
   
   service:
     type: ClusterIP
@@ -25,27 +25,6 @@ backend:
     requests:
       cpu: 250m
       memory: 256Mi
-  
-  env:
-    - name: NODE_ENV
-      value: "production"
-    - name: PORT
-      value: "3000"
-    - name: DB_CLIENT
-      value: "postgres"
-    - name: DB_HOST
-      value: "journai-postgresql"
-    - name: DB_PORT
-      value: "5432"
-    - name: DB_NAME
-      value: "journai"
-    - name: DB_USER
-      value: "journai"
-  
-  # Secrets should be provided via envFrom
-  envFrom:
-    - secretRef:
-        name: journai-secrets
 
   persistence:
     enabled: true
@@ -61,13 +40,13 @@ frontend:
   
   image:
     repository: noylevi/journai-frontend
-    pullPolicy: IfNotPresent
-    tag: "v1.0"
+    pullPolicy: Always   
+    tag: "v1.2"
   
   service:
     type: ClusterIP
     port: 80
-    targetPort: 80
+    targetPort: 8080
   
   resources:
     limits:
@@ -96,11 +75,13 @@ ingress:
 
 # Secrets configuration
 secrets:
-  # JWT secret for token signing
-  jwtSecret: "0a750ec6c01b0324881d80c1beae3832c8f520b009fde8b6038d76ac15cbdada"
+  # Use existing secret instead of creating from values
+  useExistingSecret: false  # Set to true to use manually created secret
+  existingSecretName: "journai-secrets"
   
-  # OpenAI API key (optional)
+  # Default values (only used if useExistingSecret=false)
+  # Real secrets in values-secrets.yaml 
+  jwtSecret: ""
+  geminiApiKey: ""
   openaiApiKey: ""
-  
-  # Database password
-  dbPassword: "journai"
+  dbPassword: ""

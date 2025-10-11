@@ -1,12 +1,33 @@
-# JournAI - Smart Trip Planner
+# JournAI Application
 
-JournAI is an AI-powered travel planning application that creates personalized itineraries tailored to your interests, budget, and travel style. From hidden gems to must-see attractions, JournAI crafts unforgettable travel experiences.
+> **Application Code** - Backend (Node.js) + Frontend (React)
+> 
+> For general project information, see [main README](../README.md)
+
+## Latest Updates (v1.4)
+
+- ✅ **PostgreSQL Production-Ready** - Full RDS support
+- ✅ **Gemini AI Integration** - Free AI-powered itineraries!
+- ✅ **Photo Albums** - Organize trip photos by album
+- ✅ **AI Chatbot** - Edit itineraries with natural language
+- ✅ **Non-root Containers** - Enhanced security
+- ✅ **50MB Upload Support** - Large images & avatars
+
+## 🚀 Quick Start
+
+```bash
+# Using Docker Compose (Easiest)
+docker compose up -d
+
+# Access the app
+open http://localhost:5173
+```
+
+For Kubernetes deployment, see [Helm Chart](../JournAI-Chart/)
 
 
 
 ## 📁 Project Structure
-
-```
 JournAI/
 ├── backend/                 # Node.js + Express API server
 │   ├── src/
@@ -68,8 +89,10 @@ cp env.example .env
 ```bash
 # Open .env file and set:
 JWT_SECRET=your_super_secret_jwt_key_here_change_this
-OPENAI_API_KEY=sk-your-openai-api-key-here  # Optional - leave empty if not using OpenAI
-PORT=3000  # Optional - defaults to 3000
+GEMINI_API_KEY=your-gemini-api-key  # Get from https://ai.google.dev/ (FREE!)
+OPENAI_API_KEY=  # Optional fallback
+PORT=3000
+DB_CLIENT=postgres  # or sqlite for development
 ```
 
 **🔑 JWT_SECRET:** Generate a strong secret key (at least 32 characters):
@@ -161,8 +184,10 @@ docker-compose up -d --build
 
 
 ### Database
-- **SQLite** - Lightweight database for development
-- **File-based storage** - User photos stored in uploads directory
+- **PostgreSQL** - Production-ready relational database
+- **AWS RDS Ready** - Seamless migration to managed database
+- **Automatic SQL conversion** - Supports both SQLite (dev) and PostgreSQL (prod)
+- **File storage** - User photos in persistent volumes
 
 ### Development Tools
 - **Hot Reload** - Automatic page refresh during development

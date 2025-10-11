@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "journai.fullname" . }}-backend-config
+  labels:
+    {{- include "journai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  DB_CLIENT: "postgres"
+  DB_HOST: "journai-postgresql"
+  DB_PORT: "5432"
+  DB_NAME: "journai"
+  DB_USER: "journai"
