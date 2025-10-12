@@ -29,17 +29,6 @@ spec:
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - sh
-                  - -c
-                  - |
-                    # Wait a bit for PostgreSQL to start
-                    sleep 10
-                    # Create database if it doesn't exist
-                    psql -U journai -d postgres -c "CREATE DATABASE IF NOT EXISTS journai;" || true
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
