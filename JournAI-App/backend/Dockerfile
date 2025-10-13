@@ -3,11 +3,11 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 # Install dependencies
-COPY backend/package*.json ./
+COPY package*.json ./
 RUN npm install --omit=dev
 
 # Copy source
-COPY backend .
+COPY . .
 
 # Create non-root user and set permissions for runtime writable paths
 # Use a fixed UID/GID for compatibility with Kubernetes securityContext
