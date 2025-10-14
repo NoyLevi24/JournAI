@@ -1,0 +1,66 @@
+name: Backend CI/CD
+
+on:
+  push:
+    paths:
+      - 'JournAI-App/backend/**'
+      - 'JournAI-Chart/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  #Fetch full history to allow rebase
+
+    - name: Fetch latest changes from remote
+      run: git fetch origin
+
+    - name: Pull latest changes to avoid conflicts
+      run: git pull --rebase origin dev || echo "No remote changes or rebase failed, continuing"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get current backend version and calculate new version
+      id: version
+      run: |
+        current_version=$(./scripts/version-manager.sh backend get)
+        echo "CURRENT_VERSION=$current_version" >> $GITHUB_OUTPUT
+        new_version=$(./scripts/version-manager.sh backend increment)
+        echo "NEW_VERSION=$new_version" >> $GITHUB_OUTPUT
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./JournAI-App/backend
+        file: ./JournAI-App/backend/Dockerfile
+        push: true
+        tags: |
+          noylevi/journai-backend:v${{ steps.version.outputs.NEW_VERSION }}
+
+    - name: Update values.yaml with new backend version
+      run: |
+        ./scripts/version-manager.sh backend set ${{ steps.version.outputs.NEW_VERSION }}
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add JournAI-Chart/values.yaml
+        git commit -m "Update backend image version to v${{ steps.version.outputs.NEW_VERSION }}" || echo "No changes to commit"
+        git push
