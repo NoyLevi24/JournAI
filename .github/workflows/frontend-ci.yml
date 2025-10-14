@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0  # Fetch full history to allow rebase
+        fetch-depth: 0  #Fetch full history to allow rebase
 
     - name: Fetch latest changes from remote
       run: git fetch origin
