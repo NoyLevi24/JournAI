@@ -18,6 +18,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  # Fetch full history to allow rebase
+
+    - name: Fetch latest changes from remote
+      run: git fetch origin
+
+    - name: Pull latest changes to avoid conflicts
+      run: git pull --rebase origin dev || echo "No remote changes or rebase failed, continuing"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

@@ -78,7 +78,7 @@ update_values_file() {
         awk -v new_version="$new_version" '
         /^backend:/ { in_backend=1 }
         in_backend && /^frontend:/ { in_backend=0 }
-        in_backend && /^    tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
+        in_backend && /tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
         { print }
         ' "$VALUES_FILE" > tmp.yaml && mv tmp.yaml "$VALUES_FILE"
     else
@@ -86,7 +86,7 @@ update_values_file() {
         awk -v new_version="$new_version" '
         /^frontend:/ { in_frontend=1 }
         in_frontend && /^ingress:/ { in_frontend=0 }
-        in_frontend && /^    tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
+        in_frontend && /tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
         { print }
         ' "$VALUES_FILE" > tmp.yaml && mv tmp.yaml "$VALUES_FILE"
     fi
