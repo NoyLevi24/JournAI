@@ -147,3 +147,6 @@ values-secrets.yaml
 **/values-secrets.yaml
 *.secret.yaml
 secrets.yaml
+
+# Keep local CI/CD documentation
+CI-CD-README.md
