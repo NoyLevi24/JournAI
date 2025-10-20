@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - 'JournAI-App/backend/**'
-      - 'JournAI-Chart/**'
   workflow_dispatch:
 
 permissions:
