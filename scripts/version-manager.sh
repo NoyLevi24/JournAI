@@ -72,17 +72,23 @@ update_values_file() {
 
     # Create a backup
     cp "$VALUES_FILE" "$VALUES_FILE.backup"
-    
+
     if [[ "$service" == "backend" ]]; then
-        # For backend - use sed to update the version
-        sed -i "/^backend:/,/^[^[:space:]#]/ {
-            s/\(tag:[[:space:]]*\"\?v\?\)[0-9.]\+\(\"\?\s*$\)/\1${new_version}\2/
-        }" "$VALUES_FILE"
+        # Update backend version - find the tag line in backend section
+        awk -v new_version="$new_version" '
+        /^backend:/ { in_backend=1 }
+        in_backend && /^frontend:/ { in_backend=0 }
+        in_backend && /tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
+        { print }
+        ' "$VALUES_FILE" > tmp.yaml && mv tmp.yaml "$VALUES_FILE"
     else
-        # For frontend - use sed to update the version
-        sed -i "/^frontend:/,/^[^[:space:]#]/ {
-            s/\(tag:[[:space:]]*\"\?v\?\)[0-9.]\+\(\"\?\s*$\)/\1${new_version}\2/
-        }" "$VALUES_FILE"
+        # Update frontend version - find the tag line in frontend section
+        awk -v new_version="$new_version" '
+        /^frontend:/ { in_frontend=1 }
+        in_frontend && /^ingress:/ { in_frontend=0 }
+        in_frontend && /tag: "v/ { gsub("v[0-9.]+", "v" new_version); print; next }
+        { print }
+        ' "$VALUES_FILE" > tmp.yaml && mv tmp.yaml "$VALUES_FILE"
     fi
 
     echo "Updated $service version to v$new_version"
@@ -95,7 +101,6 @@ case $ACTION in
     "increment")
         current_version=$(get_current_version "$SERVICE")
         new_version=$(increment_version "$current_version")
-        update_values_file "$SERVICE" "$new_version"
         echo "$new_version"
         ;;
     "set")
