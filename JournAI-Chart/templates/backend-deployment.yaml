@@ -47,11 +47,6 @@ spec:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
           protocol: TCP
-        {{- if .Values.backend.metrics.enabled }}
-        - name: metrics
-          containerPort: {{ .Values.backend.metrics.port }}
-          protocol: TCP
-        {{- end }}
         envFrom:
         - configMapRef:
             name: {{ include "journai.fullname" . }}-backend-config
@@ -64,6 +59,24 @@ spec:
           mountPath: {{ .Values.backend.persistence.mountPath }}
         - name: data
           mountPath: /app/data
+          
+      {{- if .Values.backend.metrics.enabled }}
+      - name: metrics
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        command: ["npm", "run", "metrics"]
+        ports:
+        - name: metrics
+          containerPort: {{ .Values.backend.metrics.port }}
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "journai.fullname" . }}-backend-config
+        - secretRef:
+            name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 12 }}
+      {{- end }}
       volumes:
       - name: uploads
         {{- if .Values.backend.persistence.enabled }}
