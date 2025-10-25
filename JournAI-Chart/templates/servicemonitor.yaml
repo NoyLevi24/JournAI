@@ -1,0 +1,21 @@
+{{- if and .Values.backend.metrics.enabled .Values.backend.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "journai.fullname" . }}-backend
+  labels:
+    {{- include "journai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+    release: prometheus-stack
+spec:
+  jobLabel: {{ include "journai.name" . }}-backend
+  selector:
+    matchLabels:
+      {{- include "journai.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend-metrics
+  endpoints:
+  - port: metrics
+    path: {{ .Values.backend.metrics.path }}
+    interval: {{ .Values.backend.metrics.serviceMonitor.interval }}
+    scrapeTimeout: {{ .Values.backend.metrics.serviceMonitor.scrapeTimeout }}
+{{- end }}

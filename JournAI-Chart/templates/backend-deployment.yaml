@@ -47,6 +47,11 @@ spec:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
           protocol: TCP
+        {{- if .Values.backend.metrics.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.backend.metrics.port }}
+          protocol: TCP
+        {{- end }}
         envFrom:
         - configMapRef:
             name: {{ include "journai.fullname" . }}-backend-config

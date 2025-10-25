@@ -1,0 +1,21 @@
+{{- if .Values.backend.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "journai.fullname" . }}-metrics
+  labels:
+    {{- include "journai.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-metrics
+    app.kubernetes.io/name: {{ include "journai.name" . }}-metrics
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  ports:
+    - name: metrics
+      port: {{ .Values.backend.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "journai.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  type: ClusterIP
+{{- end }}
