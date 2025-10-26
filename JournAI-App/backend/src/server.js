@@ -11,6 +11,7 @@ import { usingAI, aiProvider } from './services/ai.js'
 import photosRouter from './routes/photos.js'
 import albumsRouter from './routes/albums.js'
 import { metricsMiddleware } from './middleware/metricsMiddleware.js'
+import { register } from './metrics.js'
 
 dotenv.config()
 
@@ -29,8 +30,20 @@ const __dirname = path.dirname(__filename)
 
 await initDatabase()
 
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    const metrics = await register.metrics();
+    res.end(metrics);
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).end('Error generating metrics');
+  }
+});
+
 app.get('/api/health', (req, res) => {
-	res.json({ ok: true, usingAI, aiProvider })
+  res.json({ ok: true, usingAI, aiProvider })
 })
 
 app.use('/api/auth', authRouter)
