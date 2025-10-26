@@ -12,7 +12,7 @@ import { usingAI, aiProvider } from './services/ai.js';
 import photosRouter from './routes/photos.js';
 import albumsRouter from './routes/albums.js';
 import { metricsMiddleware, trackActiveUsers } from './middleware/metricsMiddleware.js';
-import { register, metrics } from './metrics.js';
+import { register } from './metrics.js';
 
 dotenv.config();
 
@@ -31,10 +31,8 @@ let dbInitialized = false;
 try {
   await initDatabase();
   dbInitialized = true;
-  metrics.dbConnectionStatus.set({ db_name: 'main' }, 1);
 } catch (error) {
   console.error('Failed to initialize database:', error);
-  metrics.dbConnectionStatus.set({ db_name: 'main' }, 0);
   
   // Don't exit in metrics mode to allow metrics collection even if DB is down
   if (!isMetricsMode) {
@@ -47,8 +45,8 @@ if (isMetricsMode) {
   app.get(process.env.METRICS_PATH || '/metrics', async (req, res) => {
     try {
       res.set('Content-Type', register.contentType);
-      const metricsData = await register.metrics();
-      res.end(metricsData);
+      const metrics = await register.metrics();
+      res.end(metrics);
     } catch (error) {
       console.error('Error generating metrics:', error);
       res.status(500).end('Error generating metrics');
@@ -97,11 +95,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // Metrics endpoint
-app.get(process.env.METRICS_PATH || '/metrics', async (req, res) => {
+app.get('/metrics', async (req, res) => {
   try {
     res.set('Content-Type', register.contentType);
-    const metricsData = await register.metrics();
-    res.end(metricsData);
+    const metrics = await register.metrics();
+    res.end(metrics);
   } catch (error) {
     console.error('Error generating metrics:', error);
     res.status(500).end('Error generating metrics');
