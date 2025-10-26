@@ -64,19 +64,17 @@ if (isMetricsMode) {
   process.exit(0);
 }
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+// Base middleware
+app.use(responseTime());  // Add response time header
+app.use(express.json({ limit: '50mb' }));  // Allow large avatar images
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Add response time header
-app.use(responseTime())
+app.use(cors());
 
 // Metrics middleware - must be before other route handlers
 app.use(metricsMiddleware);
 app.use(trackActiveUsers);
 
-// Health check endpoint
+// Health check endpoint - should be before metrics to exclude from metrics
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
@@ -87,15 +85,21 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Metrics endpoint for Prometheus
-app.get('/metrics', async (req, res) => {
+// API routes
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    ok: true, 
+    usingAI, 
+    aiProvider,
+    database: dbInitialized ? 'CONNECTED' : 'DISCONNECTED',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Metrics endpoint
+app.get(process.env.METRICS_PATH || '/metrics', async (req, res) => {
   try {
     res.set('Content-Type', register.contentType);
-    
-    // Update any runtime metrics
-    const memoryUsage = process.memoryUsage();
-    metrics.memoryUsage.set(memoryUsage.heapUsed / 1024 / 1024);
-    
     const metricsData = await register.metrics();
     res.end(metricsData);
   } catch (error) {
@@ -104,14 +108,11 @@ app.get('/metrics', async (req, res) => {
   }
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, usingAI, aiProvider })
-})
-
-app.use('/api/auth', authRouter)
-app.use('/api/itineraries', itineraryRouter)
-app.use('/api/photos', photosRouter)
-app.use('/api/albums', albumsRouter)
+// API routes
+app.use('/api/auth', authRouter);
+app.use('/api/itineraries', itineraryRouter);
+app.use('/api/photos', photosRouter);
+app.use('/api/albums', albumsRouter);
 
 // serve uploaded files
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))

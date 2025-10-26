@@ -133,7 +133,6 @@ spec:
         - name: data
           mountPath: /app/data
       {{- end }}
-      {{- end }}
       volumes:
       - name: uploads
         {{- if .Values.backend.persistence.enabled }}
