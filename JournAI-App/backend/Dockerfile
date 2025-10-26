@@ -19,8 +19,17 @@ RUN groupadd -g 10001 appuser \
 # Drop root
 USER 10001:10001
 
+# Environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
-EXPOSE 3000
+ENV METRICS_PORT=9091
 
+# Expose application and metrics ports
+EXPOSE 3000 9091
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1
+
+# Default command
 CMD ["node", "src/server.js"]
