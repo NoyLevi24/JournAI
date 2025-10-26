@@ -33,14 +33,14 @@ backend:
     accessMode: ReadWriteOnce
     size: 10Gi
     mountPath: /app/uploads
-
+    
   # Metrics configuration
   metrics:
     enabled: true
     port: 9091
     path: /metrics
     serviceMonitor:
-      enabled: false
+      enabled: true 
       interval: 15s
       scrapeTimeout: 10s
 
@@ -82,6 +82,7 @@ ingress:
         - path: /uploads
           pathType: Prefix
           backend: backend
+
 
 # Secrets configuration
 secrets:

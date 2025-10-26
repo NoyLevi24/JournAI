@@ -11,8 +11,9 @@ spec:
   jobLabel: {{ include "journai.name" . }}-backend
   selector:
     matchLabels:
-      {{- include "journai.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: backend-metrics
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "journai.name" . }}-metrics
   endpoints:
   - port: metrics
     path: {{ .Values.backend.metrics.path }}

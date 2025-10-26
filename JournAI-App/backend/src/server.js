@@ -10,6 +10,7 @@ import itineraryRouter from './routes/itineraries.js'
 import { usingAI, aiProvider } from './services/ai.js'
 import photosRouter from './routes/photos.js'
 import albumsRouter from './routes/albums.js'
+import { metricsMiddleware } from './middleware/metricsMiddleware.js'
 
 dotenv.config()
 
@@ -17,6 +18,7 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))  // Allow large avatar images
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use(metricsMiddleware)  // הוספת מידלוור למדידת ביצועים
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
