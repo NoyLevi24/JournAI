@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: {{ include "journai.fullname" . }}-backend
   labels:
     {{- include "journai.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
@@ -47,45 +47,7 @@ spec:
         - name: http
           containerPort: {{ .Values.backend.service.targetPort }}
           protocol: TCP
-        envFrom:
-        - configMapRef:
-            name: {{ include "journai.fullname" . }}-backend-config
-        - secretRef:
-            name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-        resources:
-          {{- toYaml .Values.backend.resources | nindent 12 }}
-        volumeMounts:
-        - name: uploads
-          mountPath: {{ .Values.backend.persistence.mountPath }}
-        - name: data
-          mountPath: /app/data
-          
-      {{- if .Values.backend.metrics.enabled }}
-      - name: metrics
-        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
-        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
-        command: ["node", "src/server.js", "--metrics"]
-        securityContext:
-          runAsUser: 10001
-          runAsGroup: 10001
-          runAsNonRoot: true
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          capabilities:
-            drop: ["ALL"]
-        ports:
-        - name: metrics
-          containerPort: {{ .Values.backend.metrics.port }}
-          protocol: TCP
         env:
-        - name: NODE_ENV
-          value: production
-        - name: PORT
-          value: "{{ .Values.backend.metrics.port }}"
-        - name: METRICS_PORT
-          value: "{{ .Values.backend.metrics.port }}"
-        - name: METRICS_PATH
-          value: "{{ .Values.backend.metrics.path }}"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -101,38 +63,28 @@ spec:
             name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
         livenessProbe:
           httpGet:
-            path: {{ .Values.backend.metrics.path }}
-            port: {{ .Values.backend.metrics.port }}
-          initialDelaySeconds: 15
-          periodSeconds: 15
+            path: /health
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: {{ .Values.backend.metrics.path }}
-            port: {{ .Values.backend.metrics.port }}
-          initialDelaySeconds: 5
+            path: /health
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
         resources:
-          {{- with .Values.backend.metrics.resources }}
-          limits:
-            {{- toYaml .limits | nindent 12 }}
-          requests:
-            {{- toYaml .requests | nindent 12 }}
-          {{- else }}
-          limits:
-            cpu: 100m
-            memory: 128Mi
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          {{- end }}
+          {{- toYaml .Values.backend.resources | nindent 12 }}
         volumeMounts:
+        - name: uploads
+          mountPath: {{ .Values.backend.persistence.mountPath }}
         - name: data
           mountPath: /app/data
-      {{- end }}
+          
       volumes:
       - name: uploads
         {{- if .Values.backend.persistence.enabled }}

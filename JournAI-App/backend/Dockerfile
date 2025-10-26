@@ -22,10 +22,9 @@ USER 10001:10001
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV METRICS_PORT=9091
 
-# Expose application and metrics ports
-EXPOSE 3000 9091
+# Expose application port (metrics available on /metrics endpoint)
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

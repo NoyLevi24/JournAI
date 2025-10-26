@@ -41,6 +41,8 @@ try {
 
 // In metrics-only mode, only expose the metrics endpoint
 if (isMetricsMode) {
+  console.log('Starting in metrics-only mode...');
+  
   app.get(process.env.METRICS_PATH || '/metrics', async (req, res) => {
     try {
       res.set('Content-Type', register.contentType);
@@ -52,77 +54,89 @@ if (isMetricsMode) {
     }
   });
   
+  // Health check for metrics server
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'UP',
+      mode: 'metrics-only',
+      timestamp: new Date().toISOString()
+    });
+  });
+  
   // Start the metrics server
   app.listen(port, '0.0.0.0', () => {
     console.log(`Metrics server running on port ${port}`);
+    console.log(`Metrics available at http://0.0.0.0:${port}/metrics`);
   });
   
-  // Don't continue with the rest of the server setup
-  process.exit(0);
+  
+} else {
+  // Regular application mode
+  console.log('Starting in application mode...');
+  
+  // Base middleware
+  const responseTime = (await import('response-time')).default;
+  app.use(responseTime());
+  app.use(cors());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Metrics middleware - must be before other route handlers
+  app.use(metricsMiddleware);
+  app.use(trackActiveUsers);
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'UP',
+      timestamp: new Date().toISOString(),
+      database: dbInitialized ? 'CONNECTED' : 'DISCONNECTED',
+      usingAI,
+      aiProvider
+    });
+  });
+
+  // API routes
+  app.get('/api/health', (req, res) => {
+    res.json({ 
+      ok: true, 
+      usingAI, 
+      aiProvider,
+      database: dbInitialized ? 'CONNECTED' : 'DISCONNECTED',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Metrics endpoint (also available on main app)
+  app.get('/metrics', async (req, res) => {
+    try {
+      res.set('Content-Type', register.contentType);
+      const metrics = await register.metrics();
+      res.end(metrics);
+    } catch (error) {
+      console.error('Error generating metrics:', error);
+      res.status(500).end('Error generating metrics');
+    }
+  });
+
+  // API routes
+  app.use('/api/auth', authRouter);
+  app.use('/api/itineraries', itineraryRouter);
+  app.use('/api/photos', photosRouter);
+  app.use('/api/albums', albumsRouter);
+
+  // serve uploaded files
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))
+
+  // serve frontend build if exists
+  const frontendDist = path.resolve(__dirname, '../../frontend/dist')
+  app.use(express.static(frontendDist))
+  app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+
+  const PORT = process.env.PORT || 3000
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`)
+  })
 }
-
-// Base middleware
-const responseTime = (await import('response-time')).default;
-app.use(responseTime());  // Middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));  // Allow large avatar images
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Metrics middleware - must be before other route handlers
-app.use(metricsMiddleware);
-app.use(trackActiveUsers);
-
-// Health check endpoint - should be before metrics to exclude from metrics
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'UP',
-    timestamp: new Date().toISOString(),
-    database: dbInitialized ? 'CONNECTED' : 'DISCONNECTED',
-    usingAI,
-    aiProvider
-  });
-});
-
-// API routes
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    ok: true, 
-    usingAI, 
-    aiProvider,
-    database: dbInitialized ? 'CONNECTED' : 'DISCONNECTED',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Metrics endpoint
-app.get('/metrics', async (req, res) => {
-  try {
-    res.set('Content-Type', register.contentType);
-    const metrics = await register.metrics();
-    res.end(metrics);
-  } catch (error) {
-    console.error('Error generating metrics:', error);
-    res.status(500).end('Error generating metrics');
-  }
-});
-
-// API routes
-app.use('/api/auth', authRouter);
-app.use('/api/itineraries', itineraryRouter);
-app.use('/api/photos', photosRouter);
-app.use('/api/albums', albumsRouter);
-
-// serve uploaded files
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))
-
-// serve frontend build if exists
-const frontendDist = path.resolve(__dirname, '../../frontend/dist')
-app.use(express.static(frontendDist))
-app.get(/.*/, (req, res) => {
-	res.sendFile(path.join(frontendDist, 'index.html'))
-})
-
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
-	console.log(`Server running on http://localhost:${PORT}`)
-})

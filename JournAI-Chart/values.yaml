@@ -37,7 +37,7 @@ backend:
   # Metrics configuration
   metrics:
     enabled: true
-    port: 9091
+    port: 3000
     path: /metrics
     serviceMonitor:
       enabled: true 
