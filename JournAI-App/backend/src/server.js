@@ -3,7 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import responseTime from 'response-time';
 
 import { initDatabase } from './storage/db.js';
 import authRouter from './routes/auth.js';
@@ -63,10 +62,11 @@ if (isMetricsMode) {
 }
 
 // Base middleware
-app.use(responseTime());  // Add response time header
+const responseTime = (await import('response-time')).default;
+app.use(responseTime());  // Middleware
+app.use(cors());
 app.use(express.json({ limit: '50mb' }));  // Allow large avatar images
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors());
 
 // Metrics middleware - must be before other route handlers
 app.use(metricsMiddleware);
