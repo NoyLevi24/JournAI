@@ -144,14 +144,25 @@ app.use(trackActiveUsers);
     }
   });
 
+  // Serve uploaded files from /uploads path
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  
+  // Serve static files from the uploads directory at /uploads path
+  app.use('/uploads', express.static(uploadsDir, {
+    setHeaders: (res, path) => {
+      // Set proper cache headers for uploaded files
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+  }));
+
   // API routes
   app.use('/api/auth', authRouter);
   app.use('/api/itineraries', itineraryRouter);
   app.use('/api/photos', photosRouter);
   app.use('/api/albums', albumsRouter);
-
-  // serve uploaded files
-  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))
 
   // Serve static files from the frontend dist folder
   const frontendDist = path.resolve(__dirname, '../../frontend/dist');
