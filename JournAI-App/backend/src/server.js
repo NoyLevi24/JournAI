@@ -79,15 +79,36 @@ if (isMetricsMode) {
   app.use(responseTime());
   
   // Configure CORS with specific origin and credentials support
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ];
+
   const corsOptions = {
-    origin: 'http://localhost:5173', // Update this if your frontend runs on a different port
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 600, // Cache preflight request for 10 minutes
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   };
+
+  // Apply CORS middleware
   app.use(cors(corsOptions));
   
-  // Handle preflight requests
+  // Handle preflight requests for all routes
   app.options('*', cors(corsOptions));
   
   app.use(express.json({ limit: '50mb' }));
