@@ -145,10 +145,15 @@ app.use(trackActiveUsers);
     }
   });
 
-  // Serve uploaded files from /uploads path
-  const uploadsDir = path.join(process.cwd(), 'uploads');
+  // Serve uploaded files from /app/uploads
+  const uploadsDir = '/app/uploads';
   if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      console.log(`Created uploads directory at: ${uploadsDir}`);
+    } catch (error) {
+      console.error('Failed to create uploads directory:', error);
+    }
   }
   
   // Serve static files from the uploads directory at /uploads path

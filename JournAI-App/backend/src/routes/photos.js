@@ -7,8 +7,16 @@ import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
-const uploadDir = path.resolve(process.cwd(), 'uploads')
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
+// Always use /app/uploads for uploads
+const uploadDir = '/app/uploads';
+if (!fs.existsSync(uploadDir)) {
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log(`Created upload directory at: ${uploadDir}`);
+  } catch (error) {
+    console.error('Failed to create upload directory:', error);
+  }
+}
 
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => cb(null, uploadDir),
