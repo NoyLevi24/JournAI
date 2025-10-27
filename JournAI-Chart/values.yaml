@@ -11,7 +11,7 @@ backend:
   image:
     repository: noylevi/journai-backend
     pullPolicy: Always
-    tag: "v1.7"
+    tag: "v1.8"
   
   service:
     type: ClusterIP
