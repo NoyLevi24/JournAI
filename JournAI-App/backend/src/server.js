@@ -78,45 +78,37 @@ if (isMetricsMode) {
   const responseTime = (await import('response-time')).default;
   app.use(responseTime());
   
-  // Configure CORS with specific origin and credentials support
+  // Enable CORS for all routes
+app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:8080'
   ];
-
-  const corsOptions = {
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 600, // Cache preflight request for 10 minutes
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  };
-
-  // Apply CORS middleware
-  app.use(cors(corsOptions));
   
-  // Handle preflight requests for all routes
-  app.options('*', cors(corsOptions));
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+  
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // Metrics middleware - must be before other route handlers
-  app.use(metricsMiddleware);
-  app.use(trackActiveUsers);
+// Metrics middleware
+app.use(metricsMiddleware);
+app.use(trackActiveUsers);
 
   // Health check endpoint
   app.get('/health', (req, res) => {
@@ -161,12 +153,19 @@ if (isMetricsMode) {
   // serve uploaded files
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')))
 
-  // serve frontend build if exists
-  const frontendDist = path.resolve(__dirname, '../../frontend/dist')
-  app.use(express.static(frontendDist))
-  app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(frontendDist, 'index.html'))
-  })
+  // Serve static files from the frontend dist folder
+  const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDist));
+  
+  // Handle SPA routing - serve index.html for all non-API routes
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+  });
 
   const PORT = process.env.PORT || 3000
   app.listen(PORT, '0.0.0.0', () => {

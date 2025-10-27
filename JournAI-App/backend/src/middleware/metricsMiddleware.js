@@ -99,12 +99,12 @@ export const trackActiveUsers = (req, res, next) => {
   const userId = req.user?.id || req.ip;
   
   if (userId) {
-    // Increment active users
-    activeUsers.inc({ user: userId.toString().substring(0, 50) });
+    // Increment active users with 'type' label
+    activeUsers.inc({ type: 'web' });
     
     // Decrement when response finishes
     res.on('finish', () => {
-      activeUsers.dec({ user: userId.toString().substring(0, 50) });
+      activeUsers.dec({ type: 'web' });
     });
   }
   
