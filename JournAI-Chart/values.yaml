@@ -4,6 +4,7 @@
 global:
   storageClass: ""
 
+
 # Backend configuration
 backend:
   replicaCount: 2

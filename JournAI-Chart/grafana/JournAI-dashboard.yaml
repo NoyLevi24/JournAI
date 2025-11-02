@@ -1,0 +1,344 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: journai-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  nodejs-full-dashboard.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": "Prometheus",
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "graphTooltip": 1,
+      "id": 1,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100,
+          "panels": [],
+          "title": "SYSTEM AND RESOURCE OVERVIEW 💾",
+          "type": "row"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20 }
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+          "id": 101,
+          "targets": [
+            {
+              "expr": "rate(node_process_cpu_seconds_total{namespace=\"$namespace\", app=\"jornai-app\"}[5m]) * 100",
+              "legendFormat": "Total CPU Usage %"
+            }
+          ],
+          "title": "CPU Usage Rate (Total)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 }
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+          "id": 102,
+          "targets": [
+            {
+              "expr": "node_process_resident_memory_bytes{namespace=\"$namespace\", app=\"jornai-app\"}",
+              "legendFormat": "Resident Memory"
+            },
+            {
+              "expr": "max(node_process_virtual_memory_bytes{namespace=\"$namespace\", app=\"jornai-app\"})",
+              "legendFormat": "Virtual Memory"
+            }
+          ],
+          "title": "Memory Usage (Resident vs. Virtual)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+          "id": 200,
+          "panels": [],
+          "title": "NODE.JS EVENT LOOP AND HEAP ⚙️",
+          "type": "row"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 50 } ]
+              }
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 10 },
+          "id": 201,
+          "targets": [
+            {
+              "expr": "max(node_nodejs_eventloop_lag_p90_seconds{namespace=\"$namespace\", app=\"jornai-app\"}) * 1000",
+              "legendFormat": "Max P90 Lag (across all pods)"
+            }
+          ],
+          "title": "Event Loop Lag (P90, ms)",
+          "type": "gauge"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 10 },
+          "id": 202,
+          "options": { "colorMode": "value", "textMode": "value_and_name" },
+          "targets": [
+            {
+              "expr": "max(node_process_open_fds{namespace=\"$namespace\", app=\"jornai-app\"})",
+              "legendFormat": "Open File Descriptors"
+            }
+          ],
+          "title": "Open FDs (Current)",
+          "type": "stat"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10, "stacking": { "mode": "normal" } }
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+          "id": 203,
+          "targets": [
+            {
+              "expr": "node_nodejs_heap_space_size_used_bytes{namespace=\"$namespace\", app=\"jornai-app\", space!~\"read_only|shared.*\"}",
+              "legendFormat": "{{`{{space}}`}} Used"
+            }
+          ],
+          "title": "V8 Heap Space Used (Stacked)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+          "id": 300,
+          "panels": [],
+          "title": "GARBAGE COLLECTION (GC) STATS 🧹",
+          "type": "row"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 }
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+          "id": 301,
+          "targets": [
+            {
+              "expr": "rate(node_nodejs_gc_duration_seconds_sum{namespace=\"$namespace\", app=\"jornai-app\", kind=\"minor\"}[5m]) * 1000",
+              "legendFormat": "Minor GC Duration (ms/s)"
+            },
+            {
+              "expr": "rate(node_nodejs_gc_duration_seconds_sum{namespace=\"$namespace\", app=\"jornai-app\", kind=\"major\"}[5m]) * 1000",
+              "legendFormat": "Major GC Duration (ms/s)"
+            }
+          ],
+          "title": "GC Duration Rate by Kind",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+          "id": 302,
+          "targets": [
+            {
+              "expr": "rate(node_nodejs_gc_duration_seconds_count{namespace=\"$namespace\", app=\"jornai-app\", kind=\"minor\"}[5m])",
+              "legendFormat": "Minor GC Runs/sec"
+            },
+            {
+              "expr": "rate(node_nodejs_gc_duration_seconds_count{namespace=\"$namespace\", app=\"jornai-app\", kind=\"major\"}[5m])",
+              "legendFormat": "Major GC Runs/sec"
+            }
+          ],
+          "title": "GC Runs Rate by Kind",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+          "id": 400,
+          "panels": [],
+          "title": "APPLICATION & REQUEST METRICS 🚀",
+          "type": "row"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 28 },
+          "id": 401,
+          "options": { "colorMode": "value", "textMode": "value_and_name" },
+          "targets": [
+            {
+              "expr": "sum(api_calls_total{namespace=\"$namespace\", app=\"jornai-app\"})",
+              "legendFormat": "Total API Calls"
+            }
+          ],
+          "title": "Total API Calls (Count)",
+          "type": "stat"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 28 },
+          "id": 402,
+          "options": { "colorMode": "value", "textMode": "value_and_name" },
+          "targets": [
+            {
+              "expr": "max(active_users{namespace=\"$namespace\", app=\"jornai-app\", type=\"web\"})",
+              "legendFormat": "Active Web Users"
+            }
+          ],
+          "title": "Active Users",
+          "type": "stat"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [ { "color": "red", "value": 0 }, { "color": "green", "value": 1 } ]
+              }
+            }
+          },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 28 },
+          "id": 403,
+          "options": { "colorMode": "value", "textMode": "value_and_name" },
+          "targets": [
+            {
+              "expr": "db_connection_status{namespace=\"$namespace\", app=\"jornai-app\"}",
+              "legendFormat": "DB Status"
+            }
+          ],
+          "title": "Database Connection Health",
+          "type": "stat"
+        },
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+          "id": 404,
+          "options": {
+            "legend": { "displayMode": "table" }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_request_duration_seconds_count{namespace=\"$namespace\", app=\"jornai-app\"}[5m])) by (code, route)",
+              "legendFormat": "{{code}} - {{route}}"
+            }
+          ],
+          "title": "HTTP Request Rate by Code and Route (Table/Time Series)",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "15s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["nodejs", "monitoring", "full"],
+      "templating": {
+        "list": [
+          {
+            "current": { "selected": true, "text": "Prometheus", "value": "Prometheus" },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "type": "datasource"
+          },
+          {
+            "definition": "dev-journai, staging-journai, prod-journai",
+            "description": "Select environment namespace",
+            "hide": 0,
+            "includeAll": false,
+            "label": "Namespace",
+            "multi": false,
+            "name": "namespace",
+            "options": [
+              { "selected": false, "text": "dev-journai", "value": "dev-journai" },
+              { "selected": true, "text": "prod-journai", "value": "prod-journai" },
+              { "selected": false, "text": "staging-journai", "value": "staging-journai" }
+            ],
+            "query": "dev-journai, staging-journai, prod-journai",
+            "refresh": 0,
+            "regex": "",
+            "sort": 0,
+            "type": "custom"
+          }
+        ]
+      },
+      "time": { "from": "now-3h", "to": "now" },
+      "timepicker": {
+        "refresh_intervals": ["5s", "15s", "30s", "1m", "5m", "15m", "30m", "1h"],
+        "time_options": ["5m", "30m", "1h", "3h", "6h", "12h", "24h"]
+      },
+      "timezone": "browser",
+      "title": "Journai Node.js Backend Metrics - Full",
+      "uid": "journai-nodejs-full-dashboard",
+      "version": 1
+    }
