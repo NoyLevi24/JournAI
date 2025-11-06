@@ -2,7 +2,7 @@
 
 > Your intelligent companion for crafting unforgettable travel experiences
 
-JournAI is a full-stack travel planning application that uses AI (Gemini/OpenAI) to create personalized itineraries tailored to your interests, budget, and travel style.
+JournAI is a full-stack travel planning application that uses AI (Gemini/OpenAI) to create personalized itineraries. The application is deployed on AWS using EKS, RDS, and S3 for a scalable and reliable infrastructure.
 
 ## ✨ Features
 
@@ -16,6 +16,14 @@ JournAI is a full-stack travel planning application that uses AI (Gemini/OpenAI)
 
 ## 🚀 Quick Start
 
+## 🏗️ Infrastructure
+
+JournAI uses the following AWS services:
+- **Amazon EKS** for container orchestration
+- **Amazon RDS** for PostgreSQL database
+- **Amazon S3** for file storage
+- **AWS IAM** for access management
+
 ### Local Development
 
 ```bash
@@ -25,15 +33,26 @@ docker compose up -d
 open http://localhost:5173
 ```
 
-### Kubernetes Deployment
+### AWS Deployment with Terraform
 
-```bash
-# Using Helm
-cd JournAI-Chart
-cp values-secrets.yaml.example values-secrets.yaml
-# Edit values-secrets.yaml with your secrets
-helm install journai . -n journai -f values-secrets.yaml
-```
+1. **Initialize and apply Terraform configuration**
+   ```bash
+   cd terraform
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+2. **Deploy to EKS**
+   ```bash
+   # Configure kubectl
+   aws eks --region $(terraform output -raw region) update-kubeconfig \
+     --name $(terraform output -raw cluster_name)
+   
+   # Deploy with Helm
+   cd ../JournAI-Chart
+   helm upgrade --install journai . -n journai -f values-secrets.yaml
+   ```
 
 ## 📁 Project Structure
 
@@ -70,9 +89,12 @@ JournAI/
 - OpenAI (fallback)
 
 ### Infrastructure
-- Docker & Docker Compose
-- Kubernetes + Helm
-- AWS ready (EKS, RDS, S3)
+- **AWS EKS** - Managed Kubernetes service
+- **AWS RDS** - Managed PostgreSQL database
+- **AWS S3** - Object storage for file uploads
+- **Terraform** - Infrastructure as Code
+- **Helm** - Kubernetes package manager
+- **Docker** - Containerization
 
 ## 📚 Documentation
 
@@ -83,21 +105,37 @@ JournAI/
 
 ## 🔧 Configuration
 
-### Get API Keys
+### Prerequisites
 
-1. **Gemini API** (Free!): https://ai.google.dev/
-2. **OpenAI API** (Optional): https://platform.openai.com/
+1. **AWS Account** with appropriate IAM permissions
+2. **AWS CLI** configured with access keys
+3. **kubectl** and **helm** installed
+4. **Terraform** (v1.0+)
 
-### Environment Variables
+### Required Secrets
 
-```bash
-JWT_SECRET=your-secret-key
-GEMINI_API_KEY=your-gemini-key
-DB_CLIENT=postgres
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=journai
-DB_USER=journai
+1. **AWS Credentials**
+   - AWS_ACCESS_KEY_ID
+   - AWS_SECRET_ACCESS_KEY
+   - AWS_DEFAULT_REGION
+
+2. **Application Secrets** (set in values-secrets.yaml)
+   ```yaml
+   aws:
+     accessKeyId: your-aws-access-key
+     secretAccessKey: your-aws-secret-key
+     region: your-aws-region
+     s3Bucket: your-s3-bucket-name
+   
+   database:
+     host: your-rds-endpoint
+     name: journai
+     user: postgres
+     password: your-db-password
+   
+   jwtSecret: your-jwt-secret
+   geminiApiKey: your-gemini-key
+   ```
 DB_PASSWORD=your-password
 ```
 

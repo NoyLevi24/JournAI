@@ -2,8 +2,24 @@
 
 # Global configuration
 global:
-  storageClass: ""
-
+  # Storage class for persistent volumes (not needed for S3-only deployment)
+  storageClass: "gp2"
+  
+  # AWS-specific settings
+  aws:
+    region: "us-east-1"
+    accountId: ""
+    vpcId: ""
+    
+    # EKS cluster settings
+    eks:
+      clusterName: "journai-dev-cluster"
+      
+    # Tags for all AWS resources
+    tags:
+      Environment: "dev"
+      Project: "journai"
+      ManagedBy: "terraform"
 
 # Backend configuration
 backend:
@@ -12,7 +28,7 @@ backend:
   image:
     repository: noylevi/journai-backend
     pullPolicy: Always
-    tag: "v1.9"
+    tag: "v2.0"
   
   service:
     type: ClusterIP
@@ -27,13 +43,9 @@ backend:
       cpu: 250m
       memory: 256Mi
 
+  # Persistence disabled - using S3 for file storage
   persistence:
-    enabled: true
-    existingClaim: ""
-    storageClass: "local-path"
-    accessMode: ReadWriteOnce
-    size: 10Gi
-    mountPath: /app/uploads
+    enabled: false
     
   # Metrics configuration
   metrics:
@@ -41,7 +53,7 @@ backend:
     port: 3000
     path: /metrics
     serviceMonitor:
-      enabled: true 
+      enabled: true
       interval: 15s
       scrapeTimeout: 10s
 
@@ -51,7 +63,7 @@ frontend:
   
   image:
     repository: noylevi/journai-frontend
-    pullPolicy: Always   
+    pullPolicy: Always
     tag: "v1.2"
   
   service:
@@ -70,30 +82,57 @@ frontend:
 # Ingress configuration
 ingress:
   enabled: true
-  className: traefik #:"nginx"
-  hosts:
-    - host: journai.com
-      paths:
-        - path: /
-          pathType: Prefix
-          backend: frontend
-        - path: /api
-          pathType: Prefix
-          backend: backend
-        - path: /uploads
-          pathType: Prefix
-          backend: backend
+  className: alb
+  host: ""
+  
+  # TLS configuration (managed by AWS Certificate Manager)
+  tls: false
+  certificateArn: ""
+  tlsSecretName: ""
+  
+  # WAF Web ACL (optional)
+  webAclId: ""
 
+# Database configuration - RDS only (managed by Terraform)
+database:
+  type: rds
+  
+  # RDS Configuration (set these values from Terraform outputs)
+  rds:
+    host: ""  # From Terraform: module.rds.rds_endpoint
+    port: 5432
+    name: "journaidb"
+    username: "dbadmin"
+    # Password is in secrets
+
+# S3 Configuration (managed by Terraform)
+s3:
+  enabled: true
+  bucket: ""  # From Terraform: module.s3.bucket_name (format: journai-dev-files)
+  region: "us-east-1"
 
 # Secrets configuration
 secrets:
   # Use existing secret instead of creating from values
-  useExistingSecret: false  # Set to true to use manually created secret
+  useExistingSecret: false
   existingSecretName: "journai-secrets"
   
-  # Default values (only used if useExistingSecret=false)
-  # Real secrets in values-secrets.yaml 
+  # Default values (override in values-secrets.yaml)
   jwtSecret: ""
   geminiApiKey: ""
   openaiApiKey: ""
-  dbPassword: ""
+  
+  # Database credentials
+  db:
+    host: ""
+    port: "5432"
+    name: "journaidb"
+    username: "dbadmin"
+    password: ""
+  
+  # AWS credentials (using Access Keys - set from Terraform or manually)
+  aws:
+    accessKeyId: ""
+    secretAccessKey: ""
+    region: "us-east-1"
+    s3Bucket: ""

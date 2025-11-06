@@ -1,17 +1,40 @@
 # JournAI Helm Chart
 
-Kubernetes Helm chart for deploying JournAI - AI-powered travel planning application.
+Kubernetes Helm chart for deploying JournAI on AWS EKS - AI-powered travel planning application with S3 and RDS integration.
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+1. **AWS EKS Cluster** - Deployed using the [Terraform repository](https://github.com/your-org/journai-terraform)
+2. **kubectl** configured to access your EKS cluster
+3. **Helm** (v3.0+)
+
+### Installation
+
 ```bash
-# Install the chart
-helm install journai . -n journai -f values-secrets.yaml
+# Add the repository (if published)
+helm repo add journai https://charts.your-domain.com/
 
-# Upgrade
+# Install with AWS configuration
+helm upgrade --install journai . \
+  -n journai \
+  --create-namespace \
+  -f values-secrets.yaml \
+  --set aws.region=your-region \
+  --set aws.s3.bucket=your-bucket-name \
+  --set database.host=your-rds-endpoint
+```
+
+### Upgrading
+
+```bash
 helm upgrade journai . -n journai -f values-secrets.yaml
+```
 
-# Uninstall
+### Uninstalling
+
+```bash
 helm uninstall journai -n journai
 ```
 
@@ -25,29 +48,79 @@ helm uninstall journai -n journai
 
 ### Required: Create Secrets File
 
-```bash
-# Copy the example
-cp values-secrets.yaml.example values-secrets.yaml
+1. Copy the example file and update with your secrets:
 
-# Edit with your real secrets
-vim values-secrets.yaml
+```bash
+cp values-secrets.yaml.example values-secrets.yaml
 ```
 
-**values-secrets.yaml:**
+2. Edit the file with your AWS and database credentials:
+
 ```yaml
-secrets:
-  jwtSecret: "your-jwt-secret-here"
-  geminiApiKey: "your-gemini-api-key"  # Get from https://ai.google.dev/
-  openaiApiKey: ""  # Optional
-  dbPassword: "your-db-password"
+# values-secrets.yaml
+aws:
+  accessKeyId: "your-aws-access-key"
+  secretAccessKey: "your-aws-secret-key"
+  region: "your-aws-region"
+  s3:
+    bucket: "your-s3-bucket-name"
+
+database:
+  host: "your-rds-endpoint.rds.amazonaws.com"
+  name: "journai"
+  user: "postgres"
+  password: "your-db-password"
+
+jwtSecret: "your-jwt-secret"
+geminiApiKey: "your-gemini-api-key"
+```
+
+### AWS IAM Requirements
+
+The IAM role attached to your EKS worker nodes needs the following permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name"
+        }
+    ]
+}
 ```
 
 ### Configuration Options
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `backend.replicaCount` | Number of backend pods | `2` |
-| `backend.image.repository` | Backend image | `noylevi/journai-backend` |
+| `replicaCount` | Number of pods | `2` |
+| `image.repository` | Container image | `your-ecr-repo/journai` |
+| `image.tag` | Image tag | `latest` |
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `aws.region` | AWS region | `us-east-1` |
+| `aws.s3.bucket` | S3 bucket for uploads | `journai-uploads` |
+| `database.host` | RDS endpoint | `` |
+| `database.name` | Database name | `journai` |
+| `database.user` | Database user | `postgres` |
+| `database.port` | Database port | `5432` |
+| `resources.requests.cpu` | CPU request | `100m` |
+| `resources.requests.memory` | Memory request | `256Mi` |
+| `resources.limits.cpu` | CPU limit | `500m` |
+| `resources.limits.memory` | Memory limit | `1Gi` |
 | `backend.image.tag` | Backend image tag | `v1.4` |
 | `frontend.replicaCount` | Number of frontend pods | `2` |
 | `frontend.image.repository` | Frontend image | `noylevi/journai-frontend` |

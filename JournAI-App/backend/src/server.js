@@ -145,24 +145,8 @@ app.use(trackActiveUsers);
     }
   });
 
-  // Serve uploaded files from /app/uploads
-  const uploadsDir = '/app/uploads';
-  if (!fs.existsSync(uploadsDir)) {
-    try {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-      console.log(`Created uploads directory at: ${uploadsDir}`);
-    } catch (error) {
-      console.error('Failed to create uploads directory:', error);
-    }
-  }
-  
-  // Serve static files from the uploads directory at /uploads path
-  app.use('/uploads', express.static(uploadsDir, {
-    setHeaders: (res, path) => {
-      // Set proper cache headers for uploaded files
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
-  }));
+  // File uploads are now handled by S3, no local file storage needed
+  console.log('Using S3 for file storage');
 
   // API routes
   app.use('/api/auth', authRouter);

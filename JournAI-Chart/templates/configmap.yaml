@@ -6,10 +6,16 @@ metadata:
     {{- include "journai.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 data:
-  NODE_ENV: "production"
-  PORT: "3000"
-  DB_CLIENT: "postgres"
-  DB_HOST: "journai-postgresql"
-  DB_PORT: "5432"
-  DB_NAME: "journai"
-  DB_USER: "journai"
+  NODE_ENV: production
+  PORT: "{{ .Values.backend.service.targetPort }}"
+  
+  # Database configuration - always use RDS
+  DB_CLIENT: {{ .Values.secrets.db.client | quote }}
+  DB_HOST: {{ .Values.secrets.db.host | quote }}
+  DB_PORT: {{ .Values.secrets.db.port | quote }}
+  DB_NAME: {{ .Values.secrets.db.name | quote }}
+  DB_USER: {{ .Values.secrets.db.username | quote }}
+  
+  # S3 Configuration
+  S3_BUCKET_NAME: {{ .Values.secrets.aws.s3Bucket | quote }}
+  AWS_REGION: {{ .Values.secrets.aws.region | quote }}
