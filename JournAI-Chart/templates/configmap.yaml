@@ -16,6 +16,9 @@ data:
   DB_NAME: {{ .Values.secrets.db.name | quote }}
   DB_USER: {{ .Values.secrets.db.username | quote }}
   
+  # Database SSL Configuration
+  DB_SSL: {{ .Values.secrets.db.ssl.enabled | default false | quote }}
+  
   # S3 Configuration
   S3_BUCKET_NAME: {{ .Values.secrets.aws.s3Bucket | quote }}
   AWS_REGION: {{ .Values.secrets.aws.region | quote }}

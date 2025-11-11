@@ -45,8 +45,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        
-        # Environment variables from ConfigMap
         - name: NODE_ENV
           valueFrom:
             configMapKeyRef:
@@ -92,8 +90,15 @@ spec:
             configMapKeyRef:
               name: {{ include "journai.fullname" . }}-backend-config
               key: AWS_REGION
-        
-        # Sensitive environment variables from Secret
+        - name: DB_SSL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_SSL
+        {{- if and .Values.secrets.db.ssl.enabled .Values.secrets.db.ssl.caCertPath }}
+        - name: DB_CA_CERT_PATH
+          value: "/etc/ssl/certs/rds-ca-cert.pem"
+        {{- end }}
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -149,9 +154,28 @@ spec:
           mountPath: /tmp
         - name: data
           mountPath: /app/data
-          
+        {{- if and .Values.secrets.db.ssl.enabled .Values.secrets.db.ssl.caCertPath }}
+        - name: db-ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        {{- else }}
+        - name: ca-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        {{- end }}
       volumes:
       - name: tmp
         emptyDir: {}
       - name: data
         emptyDir: {}
+      {{- if and .Values.secrets.db.ssl.enabled .Values.secrets.db.ssl.caCertPath }}
+      - name: db-ssl-certs
+        secret:
+          secretName: {{ include "journai.fullname" . }}-db-ssl-certs
+          optional: false
+      {{- else }}
+      - name: ca-certs
+        hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+      {{- end }}
