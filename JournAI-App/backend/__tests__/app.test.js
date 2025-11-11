@@ -10,7 +10,7 @@ describe('GET /health', () => {
   
   beforeAll((done) => {
     // Start the server on a random port
-    server = app.listen(0, '127.0.0.1', done);
+    server = app.listen(0, 'localhost', done);
   });
 
   afterAll((done) => {
