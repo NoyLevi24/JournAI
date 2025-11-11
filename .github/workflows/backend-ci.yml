@@ -36,8 +36,8 @@ jobs:
       run: |
         # Ensure test files are executable
         chmod +x __tests__/*.js
-        # Run tests with increased timeout
-        yarn test --testTimeout=30000 --forceExit
+        # Run tests with ES modules support and increased timeout
+        NODE_OPTIONS=--experimental-vm-modules yarn test --testTimeout=30000 --forceExit
 
   build-and-deploy:
     needs: test
