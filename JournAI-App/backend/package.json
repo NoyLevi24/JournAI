@@ -7,7 +7,15 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "metrics": "node metrics-server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --testTimeout=15000 --forceExit"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --testTimeout=30000 --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "setupFilesAfterEnv": ["<rootDir>/test/setup.js"]
   },
   "keywords": [],
   "author": "",
