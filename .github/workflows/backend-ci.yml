@@ -33,11 +33,7 @@ jobs:
     
     - name: Run tests
       working-directory: ./JournAI-App/backend
-      run: |
-        # Ensure test files are executable
-        chmod +x __tests__/*.js
-        # Run tests with ES modules support and increased timeout
-        NODE_OPTIONS=--experimental-vm-modules yarn test
+      run: yarn test
 
   build-and-deploy:
     needs: test
