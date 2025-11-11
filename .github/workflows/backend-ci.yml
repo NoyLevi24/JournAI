@@ -23,19 +23,21 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18.x'
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: 'JournAI-App/backend/package.json'
     
     - name: Install dependencies
-      working-directory: ./JournAI-App/backend
-      run: npm ci
+      working-directory: ./JournAI-App
+      run: |
+        yarn install --frozen-lockfile
     
     - name: Run tests
       working-directory: ./JournAI-App/backend
-      run: npm test
+      run: yarn test
     
     - name: Run linter
       working-directory: ./JournAI-App/backend
-      run: npm run lint
+      run: yarn lint
 
   build-and-deploy:
     needs: test
