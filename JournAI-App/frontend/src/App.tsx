@@ -163,7 +163,7 @@ function AlbumPage({ token, tripId, onBack }: { token: string, tripId: number, o
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))',gap:10,marginTop:12}}>
           {(activeAlbumId==null ? photos : filtered).map(p => (
             <div key={p.id} className="glass" style={{border:'1px solid #333',borderRadius:8,padding:8}}>
-              <img src={`/uploads/${p.filename}`} alt={p.caption||''} style={{width:'100%',height:160,objectFit:'cover',borderRadius:6,display:'block'}} onError={(e)=>{(e.target as HTMLImageElement).style.opacity='0.3'}}/>
+              <img src={`https://journai-dev-files.s3.us-east-1.amazonaws.com/${p.filename}`} alt={p.caption||''} style={{width:'100%',height:160,objectFit:'cover',borderRadius:6,display:'block'}} onError={(e)=>{(e.target as HTMLImageElement).style.opacity='0.3'}}/>
               <div style={{marginTop:6}}>
                 <div style={{fontWeight:700}}>{p.title||''}</div>
                 <div style={{opacity:0.9,fontSize:12}}>{p.caption||''}</div>
@@ -211,7 +211,7 @@ function AllAlbumsPage({ token, onOpenAlbum }: { token: string, onOpenAlbum: (tr
           <button key={t.id} onClick={()=>onOpenAlbum(t.id)} className="glass" style={{border:'1px solid #333',borderRadius:12,padding:0,overflow:'hidden',textAlign:'left',cursor:'pointer',color:'#e5e7eb'}}>
             <div style={{height:160,background:'#0d0d0d'}}>
               {latestByTrip[t.id] ? (
-                <img src={`/uploads/${latestByTrip[t.id]}`} alt="cover" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+                <img src={`https://journai-dev-files.s3.us-east-1.amazonaws.com/${latestByTrip[t.id]}`} alt="cover" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
               ) : (
                 <div style={{height:'100%',display:'grid',placeItems:'center',opacity:0.6}}>No photos yet</div>
               )}
