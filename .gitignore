@@ -12,6 +12,24 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# Frontend specific
+JournAI-App/frontend/dist
+JournAI-App/frontend/.vite
+JournAI-App/frontend/coverage
+
+# Backend specific
+JournAI-App/backend/node_modules
+JournAI-App/backend/coverage
+
 # Runtime data
 pids
 *.pid

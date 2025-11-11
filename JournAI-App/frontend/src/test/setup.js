@@ -1,13 +1,26 @@
-import { expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import { expect, afterEach, vi } from 'vitest';
+import matchers from '@testing-library/jest-dom/matchers';
 
 // Extend Vitest's expect with jest-dom matchers
-Object.values(matchers).forEach((matcher) => {
-  expect.extend(matcher);
+expect.extend(matchers);
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
 });
 
-// Run cleanup after each test case
+// Cleanup after each test case
 afterEach(() => {
-  cleanup();
+  vi.clearAllMocks();
+  document.body.innerHTML = '';
 });

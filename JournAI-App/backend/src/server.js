@@ -168,8 +168,14 @@ app.use(trackActiveUsers);
     });
   });
 
-  const PORT = process.env.PORT || 3000
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`)
-  })
+  // Only start the server if this file is run directly (not when imported for tests)
+  if (process.env.NODE_ENV !== 'test') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
+
+// Export the app for testing
+export { app };
