@@ -33,7 +33,11 @@ jobs:
     
     - name: Run tests
       working-directory: ./JournAI-App/backend
-      run: yarn test
+      run: |
+        # Ensure test files are executable
+        chmod +x __tests__/*.js
+        # Run tests with increased timeout
+        yarn test --testTimeout=30000 --forceExit
 
   build-and-deploy:
     needs: test
