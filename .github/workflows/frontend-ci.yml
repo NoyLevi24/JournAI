@@ -24,6 +24,7 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'npm'
+        cache-dependency-path: 'JournAI-App/frontend/package-lock.json'
     
     - name: Install dependencies
       working-directory: ./JournAI-App/frontend
