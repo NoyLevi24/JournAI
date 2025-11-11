@@ -1,4 +1,3 @@
-# Use Node.js LTS with slim variant for smaller image size
 FROM node:20-bookworm-slim
 
 WORKDIR /app
