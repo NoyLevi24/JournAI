@@ -41,8 +41,7 @@ USER 10001:10001
 # Note: Sensitive values should come from Kubernetes secrets
 ENV NODE_ENV=production \
     PORT=3000 \
-    # Remove local file storage related env vars
-    # UPLOAD_DIR is no longer needed as we're using S3
+    # Remove local file storage related env vars - using S3
     # Add any other non-sensitive configuration
     NODE_OPTIONS="--max-old-space-size=512"
 
