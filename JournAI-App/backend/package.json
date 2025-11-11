@@ -7,15 +7,10 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "metrics": "node metrics-server.js",
-    "test": "NODE_ENV=test NODE_OPTIONS='--experimental-vm-modules --max-old-space-size=4096' jest --detectOpenHandles --forceExit --verbose"
+    "test": "jest"
   },
   "jest": {
-    "testEnvironment": "node",
-    "transform": {},
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "setupFilesAfterEnv": ["<rootDir>/test/setup.js"]
+    "testEnvironment": "node"
   },
   "keywords": [],
   "author": "",
