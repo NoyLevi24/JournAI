@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install AWS CLI v2 for S3 access
+# Install AWS CLI v2 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" \
     && unzip awscliv2.zip \
     && ./aws/install \
