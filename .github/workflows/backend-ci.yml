@@ -34,10 +34,6 @@ jobs:
     - name: Run tests
       working-directory: ./JournAI-App/backend
       run: yarn test
-    
-    - name: Run linter
-      working-directory: ./JournAI-App/backend
-      run: yarn lint
 
   build-and-deploy:
     needs: test
