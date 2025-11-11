@@ -150,3 +150,6 @@ secrets.yaml
 
 # Keep local CI/CD documentation
 CI-CD-README.md
+
+# Ignore the files directory
+JournAI-Chart/files/
