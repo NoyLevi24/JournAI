@@ -136,3 +136,8 @@ secrets:
     secretAccessKey: ""
     region: "us-east-1"
     s3Bucket: ""
+
+vault:
+  enabled: true
+  role: "journai-dev-role" 
+  secretPath: "secret/journai/all-environments" 

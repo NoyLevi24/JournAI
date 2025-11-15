@@ -16,6 +16,29 @@ spec:
       labels:
         {{- include "journai.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend
+      # >>>Vault Annotations <<<
+      annotations:
+        # הפעלת ה-Vault Agent Sidecar Injection
+        vault.hashicorp.com/agent-inject: "true"
+        
+        # 1. ה-Role משתנה לפי הסביבה (נדרס ע"י ArgoCD)
+        vault.hashicorp.com/role: "{{ .Values.vault.role }}"
+        
+        # 2. נתיב הסוד המשותף לכל הסביבות
+        vault.hashicorp.com/agent-inject-template-secrets.env: |
+          {% with secret_path = "{{ .Values.vault.secretPath }}" %}
+          {% with secrets_data = secrets.kv.get (printf "%s/backend" secret_path) %}
+
+          DB_PASSWORD={{ secrets_data.data.db_password }}
+          JWT_SECRET={{ secrets_data.data.jwt_secret }}
+          GEMINI_API_KEY={{ secrets_data.data.gemini_api_key }}
+          OPENAI_API_KEY={{ secrets_data.data.openai_api_key }}
+          AWS_ACCESS_KEY_ID={{ secrets_data.data.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY={{ secrets_data.data.aws_secret_access_key }}
+
+          {% endwith %}
+          {% endwith %}
+      # >>> Vault Annotations <<<
     spec:
       securityContext:
         fsGroup: 10001
@@ -37,6 +60,7 @@ spec:
           containerPort: {{ .Values.backend.service.targetPort }}
           protocol: TCP
         env:
+          # --- ConfigMap ---
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -95,42 +119,13 @@ spec:
             configMapKeyRef:
               name: {{ include "journai.fullname" . }}-backend-config
               key: DB_SSL
+        # --- ConfigMap ---
+
         {{- if and .Values.secrets.db.ssl.enabled .Values.secrets.db.ssl.caCertPath }}
         - name: DB_CA_CERT_PATH
           value: "/etc/ssl/certs/rds-ca-cert.pem"
         {{- end }}
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: DB_PASSWORD
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: JWT_SECRET
-        - name: GEMINI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: GEMINI_API_KEY
-              optional: true
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: OPENAI_API_KEY
-              optional: true
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: AWS_ACCESS_KEY_ID
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
-              key: AWS_SECRET_ACCESS_KEY
+        
         livenessProbe:
           httpGet:
             path: /health
