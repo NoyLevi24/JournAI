@@ -18,6 +18,7 @@ data:
   
   # Database SSL Configuration
   DB_SSL: {{ .Values.secrets.db.ssl.enabled | default false | quote }}
+  DB_CA_CERT_PATH: "/etc/ssl/certs/rds-ca-cert.pem"
   
   # S3 Configuration
   S3_BUCKET_NAME: {{ .Values.secrets.aws.s3Bucket | quote }}

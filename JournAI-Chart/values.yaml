@@ -8,7 +8,7 @@ global:
   # AWS-specific settings
   aws:
     region: "us-east-1"
-    accountId: ""
+    accountId: "255195625987"
     vpcId: ""
     
     # EKS cluster settings
@@ -20,6 +20,14 @@ global:
       Environment: "dev"
       Project: "journai"
       ManagedBy: "terraform"
+
+# External Secrets Configuration
+externalSecrets:
+  enabled: true
+  refreshInterval: "1h"
+  secretStore:
+    name: "aws-secrets-manager"
+    region: "us-east-1"
 
 # Backend configuration
 backend:
@@ -101,8 +109,8 @@ s3:
 
 # Secrets configuration
 secrets:
-  # Use existing secret instead of creating from values
-  useExistingSecret: false
+  # Use External Secrets Operator
+  useExistingSecret: true
   existingSecretName: "journai-secrets"
   
   # Default values (override in values-secrets.yaml)
@@ -117,19 +125,19 @@ secrets:
     port: "5432"
     name: "journaidb"
     username: "dbadmin"
-    password: ""  # Set from secret
+    password: ""  # password is managed by External Secrets
     
     # SSL Configuration for RDS
     ssl:
       enabled: true  # Set to true to enable SSL for RDS
       rejectUnauthorized: true
-      caCertPath: "files/certs/global-bundle.pem"
       sslmode: "verify-full"
-      sslrootcert: "files/certs/global-bundle.pem"
+      # Certificate is now managed by External Secrets Operator
+      # and mounted at /etc/ssl/certs/rds-ca-cert.pem
 
   # AWS credentials (using Access Keys - set from Terraform or manually)
   aws:
-    accessKeyId: ""  # Set from secret
-    secretAccessKey: ""  # Set from secret
+    accessKeyId: ""  # Set from External Secrets
+    secretAccessKey: ""  # Set from External Secrets
     region: "us-east-1"
     s3Bucket: "journai-dev-files" 
