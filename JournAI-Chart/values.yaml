@@ -118,14 +118,14 @@ secrets:
     name: "journaidb"
     username: "dbadmin"
     password: ""  # Set from secret
-
-  # SSL Configuration for RDS
-  ssl:
-    enabled: true  # Set to true to enable SSL for RDS
-    rejectUnauthorized: true
-    caCertPath: "files/certs/global-bundle.pem"
-    sslmode: "verify-full"
-    sslrootcert: "files/certs/global-bundle.pem"
+    
+    # SSL Configuration for RDS
+    ssl:
+      enabled: true  # Set to true to enable SSL for RDS
+      rejectUnauthorized: true
+      caCertPath: "files/certs/global-bundle.pem"
+      sslmode: "verify-full"
+      sslrootcert: "files/certs/global-bundle.pem"
 
   # AWS credentials (using Access Keys - set from Terraform or manually)
   aws:
