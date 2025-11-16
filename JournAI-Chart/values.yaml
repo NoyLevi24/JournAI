@@ -112,7 +112,7 @@ secrets:
   
   # Database credentials
   db:
-    host: ""  # Override in environment-specific values
+    host: "journai-db-dev.copascw6amc8.us-east-1.rds.amazonaws.com"  
     client: "postgres"  
     port: "5432"
     name: "journaidb"
@@ -132,4 +132,4 @@ secrets:
     accessKeyId: ""  # Set from secret
     secretAccessKey: ""  # Set from secret
     region: "us-east-1"
-    s3Bucket: ""  # Override in environment-specific values
+    s3Bucket: "journai-dev-files" 
