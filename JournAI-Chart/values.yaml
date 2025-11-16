@@ -112,27 +112,24 @@ secrets:
   
   # Database credentials
   db:
-    host: ""
+    host: ""  # Override in environment-specific values
     client: "postgres"  
     port: "5432"
     name: "journaidb"
     username: "dbadmin"
-    password: ""
+    password: ""  # Set from secret
 
-    # SSL Configuration for RDS
-    ssl:
-      enabled: true  # Set to true to enable SSL for RDS
-      # Set to false to disable SSL certificate verification (not recommended for production)
-      rejectUnauthorized: true
-      # Path to CA certificate (required if using SSL with certificate verification)
-      # This should be a path relative to the chart directory
-      # Download from: https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-      # Example: files/certs/global-bundle.pem
-      caCertPath: ""
-  
+  # SSL Configuration for RDS
+  ssl:
+    enabled: true  # Set to true to enable SSL for RDS
+    rejectUnauthorized: true
+    caCertPath: "files/certs/global-bundle.pem"
+    sslmode: "verify-full"
+    sslrootcert: "files/certs/global-bundle.pem"
+
   # AWS credentials (using Access Keys - set from Terraform or manually)
   aws:
-    accessKeyId: ""
-    secretAccessKey: ""
+    accessKeyId: ""  # Set from secret
+    secretAccessKey: ""  # Set from secret
     region: "us-east-1"
-    s3Bucket: ""
+    s3Bucket: ""  # Override in environment-specific values
