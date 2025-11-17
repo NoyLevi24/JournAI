@@ -104,7 +104,7 @@ ingress:
 # S3 Configuration (managed by Terraform)
 s3:
   enabled: true
-  bucket: ""  # From Terraform: module.s3.bucket_name (format: journai-dev-files)
+  bucket: "journai-dev-files"
   region: "us-east-1"
 
 # Secrets configuration
@@ -112,11 +112,6 @@ secrets:
   # Use External Secrets Operator
   useExistingSecret: true
   existingSecretName: "journai-secrets"
-  
-  # Default values (override in values-secrets.yaml)
-  jwtSecret: ""
-  geminiApiKey: ""
-  openaiApiKey: ""
   
   # Database credentials
   db:
