@@ -2,17 +2,19 @@
 
 > Your intelligent companion for crafting unforgettable travel experiences
 
-JournAI is a full-stack travel planning application that uses AI (Gemini/OpenAI) to create personalized itineraries. The application is deployed on AWS using EKS, RDS, and S3 for a scalable and reliable infrastructure.
+JournAI is a full-stack travel planning application that uses AI (Gemini/OpenAI) to create personalized itineraries. The application is deployed on AWS using EKS, RDS, and S3 for a scalable and reliable infrastructure with GitOps automation.
 
 ## ✨ Features
 
 - 🤖 **AI-Powered Itineraries** - Gemini AI generates personalized travel plans
 - 💬 **AI Chatbot** - Edit your itinerary with natural language
-- 📸 **Photo Albums** - Organize trip memories by album
+- 📸 **Photo Albums** - Organize trip memories by album with S3 storage
 - 👤 **User Profiles** - Secure authentication with avatars
-- 🗄️ **PostgreSQL** - Production-ready database
+- 🗄️ **PostgreSQL** - Production-ready database with AWS RDS
 - ☸️ **Kubernetes Ready** - Helm charts for easy deployment
 - 🔒 **Secure** - Non-root containers, secrets management
+- 🚀 **GitOps** - Automated deployments with ArgoCD
+- 🔐 **AWS Secrets Manager** - Secure secrets storage and management
 
 ## 🚀 Quick Start
 
@@ -22,7 +24,9 @@ JournAI uses the following AWS services:
 - **Amazon EKS** for container orchestration
 - **Amazon RDS** for PostgreSQL database
 - **Amazon S3** for file storage
+- **AWS Secrets Manager** for secure secrets storage
 - **AWS IAM** for access management
+- **GitOps** with ArgoCD for automated deployments
 
 ### Local Development
 
@@ -33,9 +37,10 @@ docker compose up -d
 open http://localhost:5173
 ```
 
-### AWS Deployment with Terraform
+### AWS Deployment with Terraform & GitOps
 
 1. **Initialize and apply Terraform configuration**
+clone from repository: https://github.com/NoyLevi24/Terraform.git
    ```bash
    cd terraform
    terraform init
@@ -43,15 +48,18 @@ open http://localhost:5173
    terraform apply
    ```
 
-2. **Deploy to EKS**
+2. **Deploy to EKS with GitOps**
    ```bash
    # Configure kubectl
    aws eks --region $(terraform output -raw region) update-kubeconfig \
      --name $(terraform output -raw cluster_name)
    
-   # Deploy with Helm
+   # Deploy with Helm (initial setup)
    cd ../JournAI-Chart
    helm upgrade --install journai . -n journai -f values-secrets.yaml
+   
+   # GitOps will handle subsequent deployments
+   # See https://github.com/NoyLevi24/GitOps.git repository for ArgoCD configuration
    ```
 
 ## 📁 Project Structure
@@ -66,9 +74,8 @@ JournAI/
 │   ├── templates/        # K8s manifests
 │   ├── values.yaml       # Configuration
 │   └── README.md         # Deployment guide
-└── docs/                 # Documentation
-    ├── DEPLOYMENT.md     # Production deployment
-    └── RDS-MIGRATION.md  # AWS RDS migration
+└── README.md             # Project overview
+    
 ```
 
 ## 🛠️ Tech Stack
@@ -92,16 +99,19 @@ JournAI/
 - **AWS EKS** - Managed Kubernetes service
 - **AWS RDS** - Managed PostgreSQL database
 - **AWS S3** - Object storage for file uploads
+- **AWS Secrets Manager** - Secure secrets storage and rotation
 - **Terraform** - Infrastructure as Code
 - **Helm** - Kubernetes package manager
+- **ArgoCD** - GitOps continuous delivery
 - **Docker** - Containerization
 
 ## 📚 Documentation
 
 - **[Application README](./JournAI-App/README.md)** - How to run the code
 - **[Helm Chart README](./JournAI-Chart/README.md)** - Kubernetes deployment
-- **[Deployment Guide](./docs/DEPLOYMENT.md)** - Production setup
-- **[RDS Migration](./docs/RDS-MIGRATION.md)** - Database migration
+- **[GitOps Repository](https://github.com/NoyLevi24/GitOps.git)** - ArgoCD configuration
+- **[Terraform Repository](https://github.com/NoyLevi24/Terraform.git)** - AWS infrastructure
+
 
 ## 🔧 Configuration
 
@@ -112,32 +122,26 @@ JournAI/
 3. **kubectl** and **helm** installed
 4. **Terraform** (v1.0+)
 
-### Required Secrets
+### AWS Secrets Manager Integration
 
-1. **AWS Credentials**
-   - AWS_ACCESS_KEY_ID
-   - AWS_SECRET_ACCESS_KEY
-   - AWS_DEFAULT_REGION
+JournAI uses AWS Secrets Manager for secure storage of all sensitive data:
 
-2. **Application Secrets** (set in values-secrets.yaml)
-   ```yaml
-   aws:
-     accessKeyId: your-aws-access-key
-     secretAccessKey: your-aws-secret-key
-     region: your-aws-region
-     s3Bucket: your-s3-bucket-name
-   
-   database:
-     host: your-rds-endpoint
-     name: journai
-     user: postgres
-     password: your-db-password
-   
-   jwtSecret: your-jwt-secret
-   geminiApiKey: your-gemini-key
-   ```
-DB_PASSWORD=your-password
-```
+- **Database credentials** (RDS username/password)
+- **API keys** (Gemini, OpenAI)
+- **JWT secrets**
+- **AWS access keys**
+- **Application secrets**
+
+Secrets are automatically injected into Kubernetes pods using the Secrets Store CSI Driver, eliminating the need for manual secret management.
+
+### Required AWS IAM Permissions
+
+The IAM role/user needs permissions for:
+- Secrets Manager (read/write secrets)
+- EKS (cluster management)
+- RDS (database access)
+- S3 (file storage)
+- IAM (role management)
 
 ## 🌐 Production Deployment
 
@@ -145,10 +149,13 @@ JournAI is production-ready with:
 - ✅ Kubernetes Helm charts
 - ✅ PostgreSQL support
 - ✅ AWS RDS ready
-- ✅ Secure secrets management
+- ✅ AWS Secrets Manager integration
+- ✅ Automatic secret injection
 - ✅ Non-root containers
 - ✅ Persistent storage
 - ✅ Load balancing
+- ✅ GitOps automation with ArgoCD
+- ✅ Multi-environment support (dev/staging/prod)
 
 See [Deployment Guide](./docs/DEPLOYMENT.md) for details.
 
@@ -162,6 +169,9 @@ See [Deployment Guide](./docs/DEPLOYMENT.md) for details.
 
 ## 📝 Version History
 
+- **v2.2** - AWS Secrets Manager integration, automatic secret injection
+- **v2.1** - GitOps automation, ArgoCD integration, multi-environment support
+- **v2.0** - AWS S3 integration, enhanced security, non-root containers
 - **v1.4** - Gemini AI, Kubernetes, ConfigMap/Secrets
 - **v1.3** - PostgreSQL support, RDS ready
 - **v1.2** - Photo albums, AI chatbot
@@ -178,6 +188,8 @@ Noy & Shir Levi
 - OpenAI
 - React & Vite teams
 - Kubernetes & Helm communities
+- ArgoCD project
+- AWS cloud platform
 
 ---
 

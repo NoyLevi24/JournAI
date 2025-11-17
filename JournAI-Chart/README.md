@@ -12,9 +12,6 @@ Kubernetes Helm chart for deploying JournAI on AWS EKS - AI-powered travel plann
 
 ### Installation
 
-```bash
-# Add the repository (if published)
-helm repo add journai https://charts.your-domain.com/
 
 # Install with AWS configuration
 helm upgrade --install journai . \
@@ -108,8 +105,8 @@ The IAM role attached to your EKS worker nodes needs the following permissions:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of pods | `2` |
-| `image.repository` | Container image | `your-ecr-repo/journai` |
-| `image.tag` | Image tag | `latest` |
+| `image.repository` | Container image | `noylevi/journai-backend` |
+| `image.tag` | Image tag | `v2.1` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `aws.region` | AWS region | `us-east-1` |
 | `aws.s3.bucket` | S3 bucket for uploads | `journai-uploads` |
@@ -121,10 +118,10 @@ The IAM role attached to your EKS worker nodes needs the following permissions:
 | `resources.requests.memory` | Memory request | `256Mi` |
 | `resources.limits.cpu` | CPU limit | `500m` |
 | `resources.limits.memory` | Memory limit | `1Gi` |
-| `backend.image.tag` | Backend image tag | `v1.4` |
+| `backend.image.tag` | Backend image tag | `v2.1` |
 | `frontend.replicaCount` | Number of frontend pods | `2` |
 | `frontend.image.repository` | Frontend image | `noylevi/journai-frontend` |
-| `frontend.image.tag` | Frontend image tag | `v1.2` |
+| `frontend.image.tag` | Frontend image tag | `v1.4` |
 | `ingress.enabled` | Enable ingress | `true` |
 | `ingress.className` | Ingress class | `traefik` |
 | `ingress.hosts[0].host` | Hostname | `journai.com` |
@@ -284,8 +281,8 @@ kubectl exec -n journai deployment/backend -- chmod -R 777 /app/uploads
 
 ## 📚 More Documentation
 
-- [Deployment Guide](../docs/DEPLOYMENT.md)
-- [RDS Migration](../docs/RDS-MIGRATION.md)
+- [Application README](../JournAI-App/README.md)
+- [Main README](../README.md)
 
 ## 🤝 Contributing
 
