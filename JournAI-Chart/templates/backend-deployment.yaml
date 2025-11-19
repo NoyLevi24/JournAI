@@ -20,6 +20,41 @@ spec:
       securityContext:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
+      
+      # --- התחלה: הוספת Init Container להורדת התעודה מ-S3 ---
+      initContainers:
+      - name: download-db-cert
+        image: amazon/aws-cli:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Downloading DB Certificate from S3..."
+            # אין צורך בקונפיגורציה, ה-CLI משתמש ב-Role של ה-Node
+            aws s3 cp s3://$(S3_BUCKET)/$(S3_KEY) /etc/ssl/certs/rds-ca-bundle.pem
+            chmod 400 /etc/ssl/certs/rds-ca-bundle.pem
+            echo "Certificate downloaded successfully."
+        env:
+          - name: AWS_REGION
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "journai.fullname" . }}-backend-config
+                key: AWS_REGION
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+                key: DB_CA_CERT_S3_BUCKET
+          - name: S3_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+                key: DB_CA_CERT_S3_KEY
+        volumeMounts:
+          - name: db-ssl-certs
+            mountPath: /etc/ssl/certs
+      # --- סוף Init Container ---
+
       containers:
       - name: backend
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
@@ -95,11 +130,11 @@ spec:
             configMapKeyRef:
               name: {{ include "journai.fullname" . }}-backend-config
               key: DB_SSL
+        
+        # עדכון נתיב התעודה - כעת הוא נמצא בתוך ה-Volume המשותף
         - name: DB_CA_CERT_PATH
-          valueFrom:
-            configMapKeyRef:
-              name: {{ include "journai.fullname" . }}-backend-config
-              key: DB_CA_CERT_PATH
+          value: "/etc/ssl/certs/rds-ca-bundle.pem"
+
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -157,13 +192,15 @@ spec:
           mountPath: /app/data
         - name: db-ssl-certs
           mountPath: /etc/ssl/certs
-          readOnly: true
+          # הסרתי readOnly: true כדי שה-initContainer יוכל לכתוב לשם בהתחלה, 
+          # למרות שבקונטיינר הראשי זה לא קריטי כי הקובץ כבר שם.
+      
       volumes:
       - name: tmp
         emptyDir: {}
       - name: data
         emptyDir: {}
+      
+      # --- שינוי: ה-Volume הוא כעת תיקייה ריקה משותפת במקום Secret ---
       - name: db-ssl-certs
-        secret:
-          secretName: {{ include "journai.fullname" . }}-db-ssl-certs
-          optional: false
+        emptyDir: {}
