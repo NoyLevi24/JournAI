@@ -29,12 +29,30 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            echo "Downloading DB Certificate from S3..."
-            # אין צורך בקונפיגורציה, ה-CLI משתמש ב-Role של ה-Node
+            # הפקודה הבאה תפסיק את הסקריפט אם ההורדה נכשלת
+            set -e
+            echo "Starting S3 certificate download..."
+
+            # 1. הורדת הקובץ (ה-AWS CLI ישתמש אוטומטית במשתני הסביבה)
             aws s3 cp s3://$(S3_BUCKET)/$(S3_KEY) /etc/ssl/certs/rds-ca-bundle.pem
+
+            # 2. שינוי בעלות והרשאות לקובץ
+            # ה-Init Container רץ כ-root כברירת מחדל, אז צריך לשנות בעלות ל-10001
+            chown 10001:10001 /etc/ssl/certs/rds-ca-bundle.pem 
             chmod 400 /etc/ssl/certs/rds-ca-bundle.pem
-            echo "Certificate downloaded successfully."
+            
+            echo "Certificate download successful and permissions set."
         env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: journai-secrets
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: journai-secrets
+                key: AWS_SECRET_ACCESS_KEY
           - name: AWS_REGION
             valueFrom:
               configMapKeyRef:
