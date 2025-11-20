@@ -91,11 +91,11 @@ frontend:
 ingress:
   enabled: true
   className: alb
-  host: ""
+  host: "journai.site"
   
   # TLS configuration (managed by AWS Certificate Manager)
-  tls: false
-  certificateArn: ""
+  tls: true
+  certificateArn: "arn:aws:acm:us-east-1:255195625987:certificate/1e3ef2fc-91a9-49ef-866c-16688c1b6f5a"
   tlsSecretName: ""
   
   # WAF Web ACL (optional)
