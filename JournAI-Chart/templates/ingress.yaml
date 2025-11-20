@@ -6,48 +6,53 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "journai.labels" . | nindent 4 }}
+
   annotations:
     # AWS Specific Annotations
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    
-    # 🚨 תיקון 1: הוספת פורט 443 (HTTPS) למאזינים של ה-ALB
+
+    # Add HTTPS listener (port 443)
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    
-    # 🚨 תיקון 2: הגדרת פעולת Redirect קבועה (301) מ-HTTP ל-HTTPS
-    # השם 'redirect-to-https' ישמש כשם ה-Backend ב-Path '/'
-    alb.ingress.kubernetes.io/actions.redirect-to-https: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+
+    # Permanent redirect HTTP → HTTPS
+    alb.ingress.kubernetes.io/actions.redirect-to-https: >
+      {"Type": "redirect",
+       "RedirectConfig": {
+         "Protocol": "HTTPS",
+         "Port": "443",
+         "StatusCode": "HTTP_301"
+      }}
 
     {{- if .Values.ingress.certificateArn }}
-    # ה-ARN של התעודה מ-ACM עבור Listener בפורט 443
     alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
     {{- end }}
-    
+
     {{- if .Values.ingress.host }}
-    # External DNS integration
     external-dns.alpha.kubernetes.io/hostname: {{ .Values.ingress.host }}
     {{- end }}
-    
-    # Health check and WAF settings (נשארו כפי שהיו)
+
+    # Health check configuration
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
     alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
     alb.ingress.kubernetes.io/healthy-threshold-count: '2'
     alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
-    
+
     {{- if .Values.ingress.webAclId }}
     alb.ingress.kubernetes.io/wafv2-acl-arn: {{ .Values.ingress.webAclId | quote }}
     {{- end }}
-    
+
 spec:
   rules:
     {{- if .Values.ingress.host }}
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
-          # API routes - direct to backend service
+
+          # Backend API routes
           - path: /api
             pathType: Prefix
             backend:
@@ -55,7 +60,8 @@ spec:
                 name: {{ include "journai.fullname" . }}-backend
                 port:
                   number: {{ .Values.backend.service.port }}
-          # Health check endpoint
+
+          # Health check
           - path: /health
             pathType: Prefix
             backend:
@@ -63,21 +69,19 @@ spec:
                 name: {{ include "journai.fullname" . }}-backend
                 port:
                   number: {{ .Values.backend.service.port }}
-          
-          # 🚨 תיקון 3: כלל הניתוב הראשי (/) מפנה לפעולת ה-REDIRECT
-          # רק לאחר ה-Redirect, התנועה תגיע שוב ל-ALB ותינתב ל-API/Frontend דרך HTTPS.
+
+          # Redirect HTTP → HTTPS on root path
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: redirect-to-https # <--- שימוש בשם הפעולה שהוגדר ב-Annotation
+                name: redirect-to-https
                 port:
-                  number: 80 # פורט דמה (ה-ALB מתעלם ממנו בפעולת Redirect)
+                  name: use-annotation
+
     {{- else }}
-      # ... (נשאר כפי שהיה - זהו ניתוב למקרה שלא הוגדר host)
     - http:
         paths:
-          # API routes - direct to backend service
           - path: /api
             pathType: Prefix
             backend:
@@ -85,7 +89,6 @@ spec:
                 name: {{ include "journai.fullname" . }}-backend
                 port:
                   number: {{ .Values.backend.service.port }}
-          # Health check endpoint
           - path: /health
             pathType: Prefix
             backend:
@@ -93,7 +96,6 @@ spec:
                 name: {{ include "journai.fullname" . }}-backend
                 port:
                   number: {{ .Values.backend.service.port }}
-          # All other routes - direct to frontend for client-side routing
           - path: /
             pathType: Prefix
             backend:
@@ -102,9 +104,7 @@ spec:
                 port:
                   number: {{ .Values.frontend.service.port }}
     {{- end }}
-    
-  # הגדרת ה-TLS ב-Ingress (חיוני, נשאר כפי שהיה)
-  # זה מבטיח שה-ALB Controller מבין שהדומיין מוגן
+
   {{- if and .Values.ingress.tls .Values.ingress.host }}
   tls:
     - hosts:
