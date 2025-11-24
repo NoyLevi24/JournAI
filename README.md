@@ -26,6 +26,8 @@ JournAI uses the following AWS services:
 - **Amazon S3** for file storage
 - **AWS Secrets Manager** for secure secrets storage
 - **AWS IAM** for access management
+- **AWS ACM** for SSL/TLS certificate management
+- **Amazon Route 53** for DNS and domain management
 - **GitOps** with ArgoCD for automated deployments
 
 ### Local Development
@@ -36,6 +38,13 @@ cd JournAI-App
 docker compose up -d
 open http://localhost:5173
 ```
+
+### 🚀 Domain & SSL Configuration
+
+- **Custom Domain**: `journai.site`
+- **SSL/TLS**: Managed by AWS Certificate Manager (ACM)
+- **DNS**: Managed through Amazon Route 53
+- **HTTPS**: Automatic SSL certificate provisioning and renewal
 
 ### AWS Deployment with Terraform & GitOps
 

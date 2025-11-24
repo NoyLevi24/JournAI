@@ -20,7 +20,10 @@ helm upgrade --install journai . \
   -f values-secrets.yaml \
   --set aws.region=your-region \
   --set aws.s3.bucket=your-bucket-name \
-  --set database.host=your-rds-endpoint
+  --set database.host=your-rds-endpoint \
+  --set ingress.host=journai.site \
+  --set ingress.tls[0].hosts[0]=journai.site \
+  --set ingress.tls[0].secretName=journai-tls
 ```
 
 ### Upgrading
@@ -201,6 +204,23 @@ kubectl exec -n journai deployment/postgresql -it -- psql -U journai -d journai
 ```
 
 ## 🌐 Production Deployment (AWS)
+
+### Domain & SSL Configuration
+
+JournAI is configured to use a custom domain with automatic SSL certificate management:
+
+- **Domain**: `journai.site`
+- **SSL Certificates**: Managed by AWS Certificate Manager (ACM)
+- **DNS**: Configured with Amazon Route 53
+- **Ingress**: Automatic certificate validation and HTTPS redirection
+
+### AWS Infrastructure Components
+
+The deployment leverages the following AWS services:
+- **ACM** for SSL/TLS certificate management
+- **Route 53** for DNS and domain management
+- **ALB Ingress Controller** for routing traffic to services
+- **Certificate auto-discovery** for dynamic SSL certificate management
 
 ### Prerequisites
 
