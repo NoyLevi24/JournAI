@@ -22,7 +22,7 @@
 docker compose up -d
 
 # Access the app
-open http://localhost:5173
+open http://localhost:8080
 ```
 
 ### Production Deployment
@@ -94,7 +94,7 @@ JournAI/
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/NoyLevi24/JournAI.git
 cd JournAI
 
 # Install backend dependencies
@@ -148,13 +148,13 @@ npm run dev
 ```bash
 cd frontend
 npm run dev
-# Frontend runs on http://localhost:5173 (or next available port)
+# Frontend runs on http://localhost:8080 (or next available port)
 ```
 
 ### Step 4: Access the Application
 
 Open your browser and navigate to:
-- **Frontend**: http://localhost:5173
+- **Frontend**: http://localhost:8080
 - **Backend API**: http://localhost:3000/api
 
 ### Assets Setup
@@ -196,7 +196,7 @@ docker-compose up -d --build
 - **Production-ready** configuration
 
 **Access:**
-- **Frontend**: http://localhost:5173
+- **Frontend**: http://localhost:8080
 - **Backend API**: http://localhost:3000/api
 
 ## 🛠️ Technical Details

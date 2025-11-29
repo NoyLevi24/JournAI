@@ -36,7 +36,7 @@ JournAI uses the following AWS services:
 # Using Docker Compose
 cd JournAI-App
 docker compose up -d
-open http://localhost:5173
+open http://localhost:8080
 ```
 
 ### 🚀 Domain & SSL Configuration
@@ -51,7 +51,7 @@ open http://localhost:5173
 1. **Initialize and apply Terraform configuration**
 clone from repository: https://github.com/NoyLevi24/Terraform.git
    ```bash
-   cd terraform
+   cd terraform/infrastructure/<logical component(networking, storage+s3, eks)>
    terraform init
    terraform plan
    terraform apply
@@ -63,11 +63,11 @@ clone from repository: https://github.com/NoyLevi24/Terraform.git
    aws eks --region $(terraform output -raw region) update-kubeconfig \
      --name $(terraform output -raw cluster_name)
    
-   # Deploy with Helm (initial setup)
+   # Deploy with Helm 
    cd ../JournAI-Chart
-   helm upgrade --install journai . -n journai -f values-secrets.yaml
+   helm upgrade --install journai . -n journai
    
-   # GitOps will handle subsequent deployments
+   # Deploy with ArgoCD 
    # See https://github.com/NoyLevi24/GitOps.git repository for ArgoCD configuration
    ```
 

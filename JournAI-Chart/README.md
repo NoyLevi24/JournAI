@@ -6,7 +6,7 @@ Kubernetes Helm chart for deploying JournAI on AWS EKS - AI-powered travel plann
 
 ### Prerequisites
 
-1. **AWS EKS Cluster** - Deployed using the [Terraform repository](https://github.com/your-org/journai-terraform)
+1. **AWS EKS Cluster** - Deployed using the [Terraform repository](https://github.com/NoyLevi24/Terraform.git)
 2. **kubectl** configured to access your EKS cluster
 3. **Helm** (v3.0+)
 
@@ -29,7 +29,7 @@ helm upgrade --install journai . \
 ### Upgrading
 
 ```bash
-helm upgrade journai . -n journai -f values-secrets.yaml
+helm upgrade journai . -n journai 
 ```
 
 ### Uninstalling
@@ -46,33 +46,23 @@ helm uninstall journai -n journai
 
 ## 🔧 Configuration
 
-### Required: Create Secrets File
+### Required: Create Secrets in AWS Secrets Manager
 
-1. Copy the example file and update with your secrets:
+Copy and update with your secrets:
 
 ```bash
-cp values-secrets.yaml.example values-secrets.yaml
-```
-
-2. Edit the file with your AWS and database credentials:
-
-```yaml
-# values-secrets.yaml
-aws:
-  accessKeyId: "your-aws-access-key"
-  secretAccessKey: "your-aws-secret-key"
-  region: "your-aws-region"
-  s3:
-    bucket: "your-s3-bucket-name"
-
-database:
-  host: "your-rds-endpoint.rds.amazonaws.com"
-  name: "journai"
-  user: "postgres"
-  password: "your-db-password"
-
-jwtSecret: "your-jwt-secret"
-geminiApiKey: "your-gemini-api-key"
+aws secretsmanager create-secret \
+  --name journai/app-secrets \
+  --description "JournAI application secrets" \
+  --secret-string '{
+    "JWT_SECRET": "",
+    "GEMINI_API_KEY": "",
+    "OPENAI_API_KEY": "",
+    "DB_PASSWORD": "",
+    "AWS_ACCESS_KEY_ID": "",
+    "AWS_SECRET_ACCESS_KEY": ""
+  }' \
+  --region us-east-1 
 ```
 
 ### AWS IAM Requirements
@@ -127,14 +117,14 @@ The IAM role attached to your EKS worker nodes needs the following permissions:
 | `frontend.image.tag` | Frontend image tag | `v1.4` |
 | `ingress.enabled` | Enable ingress | `true` |
 | `ingress.className` | Ingress class | `traefik` |
-| `ingress.hosts[0].host` | Hostname | `journai.com` |
+| `ingress.hosts[0].host` | Hostname | `journai.site` |
 | `backend.persistence.size` | Storage size | `10Gi` |
 
 ## 📦 What's Included
 
 - **Backend Deployment** - Node.js API server (2 replicas)
 - **Frontend Deployment** - React SPA (2 replicas)
-- **PostgreSQL** - Database for production
+- **PostgreSQL** - Database (RDS)
 - **ConfigMap** - Non-secret configuration
 - **Secret** - Sensitive data (API keys, passwords)
 - **PVC** - Persistent storage for uploads
@@ -154,14 +144,14 @@ The IAM role attached to your EKS worker nodes needs the following permissions:
 ```
 Internet
    ↓
-Ingress (journai.com)
+Ingress (journai.site)
    ↓
 ├─→ Frontend Service → Frontend Pods (React)
 └─→ Backend Service → Backend Pods (Node.js)
                          ↓
-                    PostgreSQL
+                    PostgreSQL (RDS)
                          ↓
-                    PVC (uploads)
+                    S3 (uploads)
 ```
 
 ## 🛠️ Common Tasks
@@ -172,10 +162,10 @@ Ingress (journai.com)
 # Edit values.yaml
 backend:
   image:
-    tag: "v1.5"
+    tag: "v2.3"
 
 # Apply
-helm upgrade journai . -n journai -f values-secrets.yaml
+helm upgrade journai . -n journai 
 ```
 
 ### Scale Replicas
@@ -183,8 +173,7 @@ helm upgrade journai . -n journai -f values-secrets.yaml
 ```bash
 helm upgrade journai . -n journai \
   --set backend.replicaCount=3 \
-  --set frontend.replicaCount=3 \
-  -f values-secrets.yaml
+  --set frontend.replicaCount=3 
 ```
 
 ### View Logs
@@ -195,12 +184,6 @@ kubectl logs -n journai -l app.kubernetes.io/component=backend --tail=100
 
 # Frontend logs
 kubectl logs -n journai -l app.kubernetes.io/component=frontend --tail=100
-```
-
-### Access Database
-
-```bash
-kubectl exec -n journai deployment/postgresql -it -- psql -U journai -d journai
 ```
 
 ## 🌐 Production Deployment (AWS)
@@ -248,15 +231,6 @@ backend:
     storageClass: gp3
 ```
 
-### Deploy
-
-```bash
-helm install journai . -n journai \
-  -f values.yaml \
-  -f values-production.yaml \
-  -f values-secrets.yaml
-```
-
 ## 🔄 Upgrade Strategy
 
 The chart uses `RollingUpdate` strategy:
@@ -266,9 +240,8 @@ The chart uses `RollingUpdate` strategy:
 
 ## 📝 Notes
 
-- **PVC Retention**: PVCs are kept on uninstall (annotation: `helm.sh/resource-policy: keep`)
+- **Data Retention**: Data is kept on uninstall (annotation: `helm.sh/resource-policy: keep`)
 - **Secrets Retention**: Secrets are kept on uninstall
-- **Database**: PostgreSQL data is stored on the same PVC as uploads (consider separating for production)
 
 ## 🐛 Troubleshooting
 
@@ -277,16 +250,6 @@ The chart uses `RollingUpdate` strategy:
 ```bash
 kubectl describe pod -n journai <pod-name>
 kubectl logs -n journai <pod-name>
-```
-
-### Database connection issues
-
-```bash
-# Check PostgreSQL is running
-kubectl get pods -n journai -l app.kubernetes.io/component=postgresql
-
-# Check logs
-kubectl logs -n journai deployment/postgresql
 ```
 
 ### Permission denied on uploads
