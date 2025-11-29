@@ -19,18 +19,60 @@ spec:
     spec:
       securityContext:
         fsGroup: 10001
-        fsGroupChangePolicy: Always
+        fsGroupChangePolicy: OnRootMismatch
+      
+      # --- התחלה: הוספת Init Container להורדת התעודה מ-S3 ---
       initContainers:
-      - name: fix-permissions
-        image: busybox:1.36
-        command: ['sh', '-c', 'chmod -R 777 /app/uploads || true']
-        securityContext:
-          runAsUser: 0
-          runAsNonRoot: false
-          allowPrivilegeEscalation: true
+      - name: download-db-cert
+        image: amazon/aws-cli:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # הפקודה הבאה תפסיק את הסקריפט אם ההורדה נכשלת
+            set -e
+            echo "Starting S3 certificate download..."
+
+            # 1. הורדת הקובץ (ה-AWS CLI ישתמש אוטומטית במשתני הסביבה)
+            aws s3 cp s3://$(S3_BUCKET)/$(S3_KEY) /etc/ssl/certs/rds-ca-bundle.pem
+
+            # 2. שינוי בעלות והרשאות לקובץ
+            # ה-Init Container רץ כ-root כברירת מחדל, אז צריך לשנות בעלות ל-10001
+            chown 10001:10001 /etc/ssl/certs/rds-ca-bundle.pem 
+            chmod 400 /etc/ssl/certs/rds-ca-bundle.pem
+            
+            echo "Certificate download successful and permissions set."
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: journai-secrets
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: journai-secrets
+                key: AWS_SECRET_ACCESS_KEY
+          - name: AWS_REGION
+            valueFrom:
+              configMapKeyRef:
+                name: {{ include "journai.fullname" . }}-backend-config
+                key: AWS_REGION
+          - name: S3_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+                key: DB_CA_CERT_S3_BUCKET
+          - name: S3_KEY
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+                key: DB_CA_CERT_S3_KEY
         volumeMounts:
-        - name: uploads
-          mountPath: /app/uploads
+          - name: db-ssl-certs
+            mountPath: /etc/ssl/certs
+      # --- סוף Init Container ---
+
       containers:
       - name: backend
         image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
@@ -56,11 +98,93 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        envFrom:
-        - configMapRef:
-            name: {{ include "journai.fullname" . }}-backend-config
-        - secretRef:
-            name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: PORT
+        - name: DB_CLIENT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_CLIENT
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_USER
+        - name: S3_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: S3_BUCKET_NAME
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: AWS_REGION
+        - name: DB_SSL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "journai.fullname" . }}-backend-config
+              key: DB_SSL
+        
+        # עדכון נתיב התעודה - כעת הוא נמצא בתוך ה-Volume המשותף
+        - name: DB_CA_CERT_PATH
+          value: "/etc/ssl/certs/rds-ca-bundle.pem"
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: JWT_SECRET
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: GEMINI_API_KEY
+              optional: true
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: OPENAI_API_KEY
+              optional: true
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.existingSecretName | default "journai-secrets" }}
+              key: AWS_SECRET_ACCESS_KEY
         livenessProbe:
           httpGet:
             path: /health
@@ -80,18 +204,21 @@ spec:
         resources:
           {{- toYaml .Values.backend.resources | nindent 12 }}
         volumeMounts:
-        - name: uploads
-          mountPath: {{ .Values.backend.persistence.mountPath }}
+        - name: tmp
+          mountPath: /tmp
         - name: data
           mountPath: /app/data
-          
+        - name: db-ssl-certs
+          mountPath: /etc/ssl/certs
+          # הסרתי readOnly: true כדי שה-initContainer יוכל לכתוב לשם בהתחלה, 
+          # למרות שבקונטיינר הראשי זה לא קריטי כי הקובץ כבר שם.
+      
       volumes:
-      - name: uploads
-        {{- if .Values.backend.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ .Values.backend.persistence.existingClaim | default (printf "%s-uploads" (include "journai.fullname" .)) }}
-        {{- else }}
+      - name: tmp
         emptyDir: {}
-        {{- end }}
       - name: data
+        emptyDir: {}
+      
+      # --- שינוי: ה-Volume הוא כעת תיקייה ריקה משותפת במקום Secret ---
+      - name: db-ssl-certs
         emptyDir: {}

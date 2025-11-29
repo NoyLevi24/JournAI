@@ -4,16 +4,18 @@
 > 
 > For general project information, see [main README](../README.md)
 
-## Latest Updates (v1.4)
+## Latest Updates (v2.0)
 
-- ✅ **PostgreSQL Production-Ready** - Full RDS support
-- ✅ **Gemini AI Integration** - Free AI-powered itineraries!
-- ✅ **Photo Albums** - Organize trip photos by album
-- ✅ **AI Chatbot** - Edit itineraries with natural language
+- ✅ **AWS S3 Integration** - Secure file storage for uploads
+- ✅ **AWS RDS PostgreSQL** - Managed database service
+- ✅ **AWS EKS Deployment** - Kubernetes orchestration
+- ✅ **Terraform Infrastructure** - Infrastructure as Code
+- ✅ **GitOps Workflow** - Automated deployments with ArgoCD
 - ✅ **Non-root Containers** - Enhanced security
-- ✅ **50MB Upload Support** - Large images & avatars
 
 ## 🚀 Quick Start
+
+### Local Development
 
 ```bash
 # Using Docker Compose (Easiest)
@@ -23,7 +25,35 @@ docker compose up -d
 open http://localhost:5173
 ```
 
-For Kubernetes deployment, see [Helm Chart](../JournAI-Chart/)
+### Production Deployment
+
+For production deployment on AWS EKS, see the [Helm Chart](../JournAI-Chart/) and [Infrastructure Repository](https://github.com/your-org/journai-terraform).
+
+### Environment Variables
+
+Create `.env` file in the backend directory:
+
+```bash
+# Database
+DB_CLIENT=postgres
+DB_HOST=your-rds-endpoint
+DB_PORT=5432
+DB_NAME=journai
+DB_USER=postgres
+DB_PASSWORD=your-db-password
+
+# AWS
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_REGION=your-region
+AWS_S3_BUCKET=your-bucket-name
+
+# JWT
+JWT_SECRET=your-jwt-secret
+
+# AI
+GEMINI_API_KEY=your-gemini-key
+```
 
 
 
@@ -33,9 +63,10 @@ JournAI/
 │   ├── src/
 │   │   ├── routes/         # API route handlers
 │   │   ├── middleware/     # Authentication & validation
-│   │   └── models/         # Database models
-│   ├── uploads/            # User uploaded photos
-│   ├── env.example         # Environment variables template
+│   │   ├── models/         # Database models
+│   │   └── services/       # Business logic
+│   │       └── s3.service.js  # S3 file upload service
+│   ├── .env.example        # Environment variables template
 │   └── package.json
 ├── frontend/               # React + TypeScript frontend
 │   ├── src/
