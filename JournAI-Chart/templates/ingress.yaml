@@ -3,27 +3,109 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "journai.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "journai.labels" . | nindent 4 }}
+
+  annotations:
+    # AWS Specific Annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # Add HTTPS listener (port 443)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+
+    # Automatic SSL Redirect - הדרך הפשוטה והמומלצת!
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+
+    {{- if .Values.ingress.certificateArn }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn | quote }}
+    {{- end }}
+
+    {{- if .Values.ingress.host }}
+    external-dns.alpha.kubernetes.io/hostname: {{ .Values.ingress.host }}
+    {{- end }}
+
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+
+    {{- if .Values.ingress.webAclId }}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: {{ .Values.ingress.webAclId | quote }}
+    {{- end }}
+
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
   rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    {{- if .Values.ingress.host }}
+    - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          # Backend API routes
+          - path: /api
+            pathType: Prefix
             backend:
               service:
-                name: {{ .backend }} 
+                name: {{ include "journai.fullname" . }}-backend
                 port:
-                  {{- if eq .backend "backend" }}
-                  number: {{ $.Values.backend.service.port }}
-                  {{- else }}
-                  number: {{ $.Values.frontend.service.port }}
-                  {{- end }}
-          {{- end }}
+                  number: {{ .Values.backend.service.port }}
+
+          # Health check
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "journai.fullname" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}
+
+          # Frontend - כל השאר
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "journai.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+
+    {{- else }}
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "journai.fullname" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}
+          
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "journai.fullname" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}
+          
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "journai.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
     {{- end }}
+
+  {{- if and .Values.ingress.tls .Values.ingress.host }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      {{- if .Values.ingress.tlsSecretName }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
+      {{- end }}
+  {{- end }}
 {{- end }}
